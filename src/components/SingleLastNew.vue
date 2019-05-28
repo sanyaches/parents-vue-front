@@ -56,7 +56,7 @@ export default {
   },
   created: function () {
     axios({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://stark-mountain-93246.herokuapp.com/graphql',
         method: 'post',
         data: {
           query: `

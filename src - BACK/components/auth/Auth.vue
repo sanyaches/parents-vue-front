@@ -29,7 +29,7 @@
 
 <script>
 import Strapi from 'strapi-sdk-javascript/build/main'
-const apiUrl = process.env.API_URL || 'http://localhost:1337'
+const apiUrl = process.env.API_URL || 'https://stark-mountain-93246.herokuapp.com'
 const strapi = new Strapi(apiUrl)
 import { mapMutations } from 'vuex'
 
@@ -58,7 +58,7 @@ export default {
         //alert(err.message || 'An error occurred.')
       }
       axios
-        .post('http://localhost:1337/auth/local', {
+        .post('https://stark-mountain-93246.herokuapp.com/auth/local', {
             identifier: this.email,
             password: this.password
         })
@@ -82,7 +82,7 @@ export default {
 
     // Request API.
     axios
-      .get('http://localhost:1337/posts', {
+      .get('https://stark-mountain-93246.herokuapp.com/posts', {
         headers: {
           Authorization: `Bearer ${token}`
         }

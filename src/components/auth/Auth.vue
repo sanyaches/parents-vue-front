@@ -37,7 +37,7 @@ export default {
   methods: {
     login: function () {
       axios
-        .post('http://localhost:1337/auth/local', {
+        .post('https://stark-mountain-93246.herokuapp.com/auth/local', {
             identifier: this.username,
             password: this.password
         })

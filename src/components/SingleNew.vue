@@ -3,7 +3,7 @@
     .singlenew__content
       h1.singlenew__title {{ query.title }}
       .singlenew__date <img src="@/assets/icon/clock.svg" class="singlenew__time"> {{ query.created_at }}
-      img.singlenew__img(:src="'http://localhost:1337' + query.image.url")
+      img.singlenew__img(:src="'https://stark-mountain-93246.herokuapp.com' + query.image.url")
       VueMarkdown.singlenew__desc.cnt(:source="desc") {{ desc }}
     aside.singlenew__aside
       .singlenew__aside-sticky
@@ -84,7 +84,7 @@ export default {
   methods: {
     getPosts () {
       axios({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://stark-mountain-93246.herokuapp.com/graphql',
         method: 'post',
         data: {
           query: `
