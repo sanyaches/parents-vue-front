@@ -1,0 +1,227 @@
+@import 'reset.styl'
+//@import './assets/stylus/font.styl'
+
+black = #222
+blue = #6D37F4
+lilac = #9EAAFF
+gradient = linear-gradient(90deg, lilac, blue)
+transition = .3s
+
+*
+  box-sizing border-box
+
+html
+  font-size 18px
+  color black
+  height 100%
+
+body
+  margin 0
+  font-family 'Open Sans', sans-serif
+  font-weight 400
+  height 100%
+  line-height 1.2
+
+input, button, textarea
+  font-family 'Open Sans', sans-serif
+  font-size 1rem
+
+.body
+  display flex
+  flex-direction column
+  height 100%
+  position relative
+
+.mw
+  max-width 1170px
+  margin-right auto
+  margin-left auto
+  padding-right 15px
+  padding-left 15px
+
+.red
+  color #ff0000
+
+.h1-light
+  font-size 1.5rem
+  margin 0 0 1rem
+  font-family 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif
+  position relative
+  padding-left 13px
+  border-left 3px solid #6D37F4
+  text-transform uppercase
+
+.h2
+  font-size 2rem
+  margin 0 0 1rem
+  font-family 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif
+  position relative
+  padding-left 34px
+  @media (max-width 768px)
+    font-size 1.5rem
+  &:before
+    position absolute
+    left 0
+    top 50%
+    transform translateY(-50%)
+    content ''
+    display block
+    width 24px
+    height 24px
+    background #6D37F4
+
+.arrow
+  margin-top 4rem
+  display flex
+  justify-content space-between
+  font-size 1.5rem
+  &__link
+    color inherit
+    text-decoration none
+    &:not(.arrow__link--disable):hover
+      color #6D37F4
+    &--disable
+      cursor default
+      opacity .3
+
+.router-link-exact-active
+  cursor default
+
+.button
+  text-align center
+  width 100%
+  max-width 300px
+  margin-top 1rem
+  font-size .9rem
+  border 0
+  line-height 60px
+  background blue
+  padding 0 2rem
+  text-transform uppercase
+  color #fff
+  cursor pointer
+  box-shadow 0px 10px 30px rgba(0, 0, 0, 0.15)
+  transition transition
+  &--nmt
+    margin-top 0
+  &--c
+    margin-right auto
+    margin-left auto
+  &:hover
+    transform: translateY(2px)
+    box-shadow inset 0 -1px 1px rgba(#000, .1), 0px 8px 20px rgba(0, 0, 0, 0.15)
+  &:active
+    transform translateY(3px)
+
+.input
+  position relative
+  &+&
+    margin-top 1rem
+  &__label
+    position absolute
+    //top 50%
+    top 0
+    //transform translateY(-50%)
+    left 1rem
+    transition transition
+    cursor text
+    //transform translateY(-160%)
+    transform translateY(25%)
+    opacity .6
+    font-size: .8rem
+  &__text
+    width 100%
+    border 0
+    background #f5f5f5
+    border-radius 5px
+    padding 27px 1rem 10px
+    color black
+    transition transition
+    box-shadow:inset 0 0 0 1px #f5f5f5
+    &--white
+      background #ffffff
+    &:focus
+      box-shadow:inset 0 0 0 1px #e5e5e5
+      // & + .input__label
+      //   transform translateY(-160%)
+      //   opacity .6
+      //   font-size: .8rem
+
+.cnt
+  line-height 1.5
+  > *
+    margin-top 1rem
+  i
+    font-style italic
+  strong
+    font-weight 600
+  blockquote
+    margin 3rem
+    padding 3rem
+    background #f5f5f5
+    position relative
+    &:before
+      content '«'
+      font-size 8rem
+      font-weight 600
+      color #6d37f4
+      display block
+      line-height 1
+      position absolute
+      top 0
+      left -1rem
+      transform translateY(-55%)
+    &:after
+      content '»'
+      font-size 8rem
+      font-weight 600
+      color #6d37f4
+      display block
+      line-height 1
+      position absolute
+      bottom 0
+      right -1rem
+      transform translateY(30%)
+  ul
+    li
+      border-left 1px solid #6d37f4
+      padding-left 1rem
+      padding-bottom 1rem
+      margin-left 6px
+      position relative
+      &:before
+        content ''
+        display block
+        width 12px
+        height 12px
+        background #6d37f4
+        position absolute
+        top 0
+        left -13px
+        border 7px solid #fff
+      &:last-child
+        border-color #fff
+    ol
+    padding-left calc(1rem + 6px)
+    list-style-type decimal
+
+b
+  font-weight 600
+
+.block
+  background #ede7fb
+  padding 40px 20px
+  &__link
+    color rgba(0,0,0,.6)
+    text-align center
+    margin-bottom 20px
+    cursor pointer
+    transition .3s
+    &:hover
+      color rgba(0,0,0,.9)
+  &__title
+    text-align center
+    font-weight 600
+    font-size: 1.1rem
+    color: #080024;
+    margin-bottom 20px
