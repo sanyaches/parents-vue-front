@@ -11,6 +11,7 @@
         SingleLastNew
 </template>
 
+
 <style lang="stylus">
 .singlenew
   margin-top 4rem
