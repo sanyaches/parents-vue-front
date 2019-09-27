@@ -3,13 +3,15 @@
     router-link.singlelastnew(v-for="item in query", :to="'/new/' + item.id", :key="item.id")
       .singlelastnew__title {{ item.title }}
       .singlelastnew__date {{ item.created_at }}
+    Social
 </template>
 
 <style lang="stylus">
+  @import url('https://fonts.googleapis.com/css?family=Rubik&display=swap')
 .singlelastnew
   border-left 1px solid #6d37f4
   padding-left 1rem
-  padding-bottom 2rem 
+  padding-bottom 2rem
   margin-left 6px
   position relative
   display block
@@ -36,19 +38,23 @@
   &:last-child
     border-color #fff
   &__title
-    font-family 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif
+    font-family Rubik, sans-serif
     margin-bottom .5rem
     display inline
   &__date
     color rgba(#3C3C3C, .7)
-    font-size .8rem
+    font-size .7rem
+    margin-top: .8rem;
+    font-family: Rubik, sans-serif
 </style>
 
 <script>
 import moment from 'moment'
+import Social from "./social/Social";
 const axios = require("axios")
 
 export default {
+  components: {Social},
   data() {
     return {
       query: ''
@@ -56,26 +62,26 @@ export default {
   },
   created: function () {
     axios({
-        url: 'https://stark-mountain-93246.herokuapp.com/graphql',
-        method: 'post',
-        data: {
-          query: `
-            query {
-              messes(limit:6, sort: "created_at:desc") {
-                id
-                title
-                created_at
-              }
+      url: 'https://parents-children.herokuapp.com/graphql',
+      method: 'post',
+      data: {
+        query: `
+          query {
+            messes(limit:6, sort: "created_at:desc") {
+              id
+              title
+              created_at
             }
-          `
-        }
-      }).then((result) => {
-        this.query = result.data
-        this.query = this.query.data.messes
-        this.query.forEach((item, i) => {
-          let a = moment(this.query[i].created_at)
-          this.query[i].created_at = a.locale('ru').format('Do MMMM YYYY, h:mm')
-        });
+          }
+        `
+      }
+    }).then((result) => {
+      this.query = result.data
+      this.query = this.query.data.messes
+      this.query.forEach((item, i) => {
+        let a = moment(this.query[i].created_at)
+        this.query[i].created_at = a.locale('ru').format('Do MMMM YYYY, h:mm')
+      });
     })
   }
 }

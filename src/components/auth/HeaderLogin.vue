@@ -1,6 +1,6 @@
 <template lang="pug">
   .header-login
-    router-link.header-login__button(to='/client') {{ token ? 'Личный кабинет' : 'Вход' }}
+    router-link.header-login__button(to='/client') {{ token ? 'Личный кабинет' : 'Войти' }}
     a.header-login__link(href="#", v-if="token", @click="logout") Выйти
 </template>
 
@@ -15,7 +15,7 @@ export default {
   },
   methods: {
     logout () {
-      localStorage.removeItem('user-token')
+      localStorage.removeItem('user-token');
       this.token = localStorage.getItem('user-token');
       this.$router.push('/client');
       history.go(0)
@@ -26,6 +26,8 @@ export default {
 
 <style lang="stylus">
 .header-login
+  font-family "Franklin Gothic"
+  font-weight 400
   margin-left 3rem
   display flex
   align-items stretch
@@ -36,6 +38,7 @@ export default {
     align-items center
   &__button
     font-weight normal
+    font-size 1.11rem
     line-height 50px
     padding 0 1.2rem
     text-decoration none
@@ -43,7 +46,6 @@ export default {
     border 1px solid #fff
     color #ffffff
     text-transform uppercase
-    font-weight 600
     transition .3s
     &:hover
       background rgba(#fff, .15)
@@ -51,7 +53,7 @@ export default {
     text-decoration: none
     text-transform: uppercase
     color: #fff
-    font-size .8rem
+    font-size 1rem
     -webkit-transition: 0.2s
     transition: 0.2s
     position: relative

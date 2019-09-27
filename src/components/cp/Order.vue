@@ -1,7 +1,6 @@
 <template lang="pug">
   .order(:class="[paid ? 'order--paid' : 'order--wait']")
     .order__wrap
-      .order__id {{ '#' + order_id }}
       .order__title {{ title }} <br>
         .order__more(@click="moreToggle") {{ descriptionShow ? 'Скрыть' : 'Подробнее' }}
       .order__price {{ price }}
@@ -44,13 +43,20 @@ export default {
   border-left 2px solid
   &--wait
     border-color #6D37F4
+    border-width 3px
   &--paid
     border-color #ADDB31
+    border-width 3px
   &+&
     margin-top 40px
   &__wrap
+    color: #37445E;
     padding 0 0 0 20px
     display flex
+    flex-direction: row
+    align-items: center
+    justify-content: space-between
+    box-shadow: 0 15px 15px rgba(0, 0, 0, 0.06);
     @media (max-width 768px)
       flex-direction column
   &__id
@@ -63,8 +69,21 @@ export default {
     @media (max-width 768px)
       padding-bottom 10px
   &__title
-    padding 20px 10px
-    flex 1
+    position: relative
+    padding: 5px 10px
+    font-family: 'Rubik', sans-serif;
+    font-size: 0.9rem
+    width: 40%
+    &::after
+      content: '';
+      position: absolute;
+      right: 0;
+      height: 50%;
+      width: 2px;
+      background: #fff;
+      border-left: 2px #fff;
+      z-index: 10;
+      top: 25%;
     @media (max-width 768px)
       padding-top 0
       padding-bottom 10px
@@ -73,7 +92,7 @@ export default {
     display inline-block
     color rgba(60,60,60,0.7)
     margin-top 10px
-    padding-bottom 1px
+    padding-bottom 1pxА
     border-bottom 1px dashed
     font-size .9rem
     cursor pointer
@@ -85,8 +104,10 @@ export default {
     align-items center
     justify-content center
     text-align center
-    padding 20px 10px
+    padding 19px 10px
     font-weight 600
+    font-family: 'Rubik', sans-serif;
+    font-size: 1.1rem
     white-space nowrap
     text-align center
     width 150px
@@ -99,10 +120,11 @@ export default {
       color #6D37F4
       font-weight 400
   &__pay
-    min-width 175px
+    min-width 121px
     text-align center
     padding 20px
     transition .2s
+    font-size: 0.85rem
     display flex
     justify-content center
     align-items center

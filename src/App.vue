@@ -21,5 +21,6 @@ export default {
 </script>
 
 <style lang="stylus">
-@import './assets/stylus/global.styl'
+  @import './assets/stylus/global.styl'
+  @import url('https://fonts.googleapis.com/css?family=Rubik&display=swap')
 </style>

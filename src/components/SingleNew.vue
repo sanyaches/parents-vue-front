@@ -3,7 +3,7 @@
     .singlenew__content
       h1.singlenew__title {{ query.title }}
       .singlenew__date <img src="@/assets/icon/clock.svg" class="singlenew__time"> {{ query.created_at }}
-      img.singlenew__img(:src="'https://stark-mountain-93246.herokuapp.com' + query.image.url")
+      img.singlenew__img(:src="'https://parents-children.herokuapp.com' + query.image.url")
       VueMarkdown.singlenew__desc.cnt(:source="desc") {{ desc }}
     aside.singlenew__aside
       .singlenew__aside-sticky
@@ -13,6 +13,7 @@
 
 
 <style lang="stylus">
+@import url('https://fonts.googleapis.com/css?family=Rubik&display=swap')
 .singlenew
   margin-top 4rem
   margin-bottom 8rem
@@ -27,14 +28,15 @@
     font-size 2rem
     font-family 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif
     border-left 3px solid #6d37f4
-    padding-left 2rem
+    padding-left 1.4rem
     padding-top 2px
     padding-bottom 10px
     @media (max-width 768px)
-      padding-left 1rem
+      padding-left 1.5rem
       font-size 1.4rem
   &__date
     font-size .9rem
+    font-family: 'Rubik', sans-serif
     margin-top 2rem
     margin-bottom 2rem
     color rgba(#3C3C3C, .7)
@@ -55,6 +57,11 @@
     &-sticky
       position sticky
       top 1rem
+  &__desc
+    font-family: 'Rubik', sans-serif
+    font-weight: 400
+    line-height: 160%
+    font-size: .9rem
 </style>
 
 <script>
@@ -85,7 +92,7 @@ export default {
   methods: {
     getPosts () {
       axios({
-        url: 'https://stark-mountain-93246.herokuapp.com/graphql',
+        url: 'https://parents-children.herokuapp.com/graphql',
         method: 'post',
         data: {
           query: `

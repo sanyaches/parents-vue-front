@@ -21,6 +21,8 @@
             )
             label.input__label(for='password') Введите пароль
           button.button(type='submit') Войти
+      router-link.auth__reg(to='/registration',  v-if="!token") Зарегистрироваться
+
 </template>
 
 <script>
@@ -30,6 +32,7 @@ export default {
   data() {
     return {
       username: '',
+      token: '',
       password: '',
       onerr: false
     }
@@ -37,13 +40,13 @@ export default {
   methods: {
     login: function () {
       axios
-        .post('https://stark-mountain-93246.herokuapp.com/auth/local', {
+        .post('https://parents-children.herokuapp.com/auth/local', {
             identifier: this.username,
             password: this.password
         })
         .then(response => {
-          localStorage.setItem('user-token', response.data.jwt)
-          localStorage.setItem('user-profile', JSON.stringify(response.data.user))
+          localStorage.setItem('user-token', response.data.jwt);
+          localStorage.setItem('user-profile', JSON.stringify(response.data.user));
           this.$router.push('/client');
           history.go(0)
         })
@@ -60,6 +63,10 @@ export default {
 .auth-wrap
   padding-right 15px
   padding-left 15px
+  .auth__reg
+    position: relative;
+    left: 45%;
+    top: -75px;
 .auth-video
   position absolute
   min-width: 100%;
@@ -80,6 +87,9 @@ export default {
   animation-name fadeIn
   animation-duration 1s
   box-shadow 0 0 0 1px rgba(0,0,0,.05),0 2px 2px 0 rgba(0,0,0,.065) ,0px 80px 100px rgba(0,0,0,0.05)
+  &__reg
+    text-align: center
+    width: 100%
   &__error
     background #fbeeee
     color #5f0c0c
@@ -88,6 +98,9 @@ export default {
     border-radius: 5px;
     animation-name errorForm
     animation-duration .5s
+  .button {
+    max-width: 100%
+  }
 @keyframes fadeIn
   from
     transform translateY(100px) scale(.95)

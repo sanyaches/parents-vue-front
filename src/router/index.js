@@ -5,9 +5,11 @@ import Home from '@/components/Home'
 import SingleNew from '@/components/SingleNew'
 import Client from '@/components/Client'
 import News from '@/components/News'
+import Registration from "@/components/Registration";
+import Searched from "@/components/Searched";
 
-Vue.use(Router)
-Vue.use(Vuex)
+Vue.use(Router);
+Vue.use(Vuex);
 
 export default new Router({
   routes: [
@@ -30,7 +32,17 @@ export default new Router({
       path: '/client',
       name: 'client',
       component: Client
-    }
+    },
+    {
+      path: '/registration',
+      name: 'registration',
+      component: Registration
+    },
+    {
+      path: '/searched',
+      name: 'searched',
+      component: Searched
+    },
   ],
   scrollBehavior (to, from, savedPosition) {
     return { x: 0, y: 0 }

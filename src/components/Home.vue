@@ -3,7 +3,7 @@
     .hero
       .mw
         h1.hero__title Система управления финансами
-        .hero__ps для образовательных учреждений
+        MainLogReg
     .content.mw
       h2.h2 Последние новости
       LastNews
@@ -11,10 +11,12 @@
 
 <script>
 import LastNews from './module/LastNews'
+import MainLogReg from './auth/MainLogReg'
 
 export default {
   components: {
-    LastNews
+    LastNews,
+    MainLogReg
   }
 }
 </script>
@@ -31,6 +33,7 @@ export default {
   @media (max-width 768px)
     padding-top 200px
   &__title
+    font-family: "Franklin Gothic Medium";
     font-size 4rem
     font-weight 800
     text-transform uppercase
@@ -42,6 +45,13 @@ export default {
     font-family 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif
     font-size 1.5rem
     color #f43737
+  &__auth
+    display: flex
+    flex-direction: row
+    justify-content: start
+    @media (max-width: 980px)
+      flex-direction: column
+      align-items: flex-start
 .content
   padding-top 4rem
   padding-bottom 4rem
