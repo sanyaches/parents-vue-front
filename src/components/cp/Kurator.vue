@@ -118,7 +118,7 @@ export default {
     },
     getSchools () {
       axios({
-        url: 'https://parents-children.herokuapp.com/graphql',
+        url: 'http://localhost:1337/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -142,7 +142,7 @@ export default {
       let schoolId = id;
       this.select.school = schoolId;
       axios({
-        url: 'https://parents-children.herokuapp.com/graphql',
+        url: 'http://localhost:1337/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -167,7 +167,7 @@ export default {
       let classId = id;
       this.select.class = classId;
       axios({
-        url: 'https://parents-children.herokuapp.com/graphql',
+        url: 'http://localhost:1337/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -200,7 +200,7 @@ export default {
       this.creating.start = true;
       window.scrollTo(0, 0);
       axios({
-        url: 'https://parents-children.herokuapp.com/graphql',
+        url: 'http://localhost:1337/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -250,7 +250,7 @@ export default {
           tId = tallageId,
           oPrice = onePrice;
       axios({
-        url: 'https://parents-children.herokuapp.com/graphql',
+        url: 'http://localhost:1337/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -293,7 +293,7 @@ export default {
     },
     getTallages () {
       axios({
-        url: 'https://parents-children.herokuapp.com/graphql',
+        url: 'http://localhost:1337/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },

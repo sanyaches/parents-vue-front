@@ -5,38 +5,15 @@
         tr.table-row
           th.table-item.table-header № п/п
           th.table-item.table-header ФИО
-          th.table-item.table-header Мероприятие 1
-          th.table-item.table-header Мероприятие 2
-          th.table-item.table-header Остаток
+          th.table-item.table-header(v-for="tallage in tallages") {{tallage.title}}
+          th.table-item.table-header Осталось оплатить
 
-        tr.table-row
-          td.table-cell 1
-          td.table-cell.table-cell-name Артамкин Арсений
-          td.table-cell.table-cell-count 1000 руб
-          td.table-cell.table-cell-count 2000 руб
-          td.table-cell.table-cell-residue 2550 руб
+        tr.table-row(v-for="(user, index) in users")
+          td.table-cell {{ index+1 }}
+          td.table-cell.table-cell-name {{ user.family }} {{ user.name }}
+          td.table-cell.table-cell-count(v-for="order in user.orders") {{ order.paid ? order.price+'руб.': '-' }}
+          td.table-cell.table-cell-residue {{ user.owed ? user.owed + ' руб.' : '0 руб.' }}
 
-        tr.table-row
-          td.table-cell 2
-          td.table-cell Вышегородцева Вика
-          td.table-cell 1000 руб
-          td.table-cell 2000 руб
-          td.table-cell.table-cell-residue 0 руб
-
-        tr.table-row
-          td.table-cell 3
-          td.table-cell Главицкая Мария
-          td.table-cell -
-          td.table-cell 2000 руб
-          td.table-cell.table-cell-residue 1500 руб
-
-        tr.table-row
-          td.table-cell 4
-          td.table-cell Главицкая Ольга
-          td.table-cell -
-          td.table-cell 2000 руб
-          td.table-cell.table-cell-residue 1500 руб
-        
 </template>
 
 <script>
@@ -45,30 +22,39 @@
     name: "ClassTable",
     data() {
       return {
-        school: {
-          name: '',
-          id: ''
-        },
-        class: {
-          name: '',
-          id: ''
-        },
+        school: JSON.parse(localStorage.getItem('user-school')),
+        users: [], //
+        tallages: [], //
+        class: JSON.parse(localStorage.getItem('user-class')),
         profile: JSON.parse(localStorage.getItem('user-profile')),
         token: localStorage.getItem('user-token'),
       }
     },
     mounted: function() {
-      this.getUserSchoolClass();
-      this.getUsersOfClass();
+      this.getUserSchoolClassCity();
+      this.getCurrentUser();
+      this.getUsersOrders();
     },
     methods: {
+      /**
+       * Get sum of owed from user (долг)
+       */
+      getOwed: function (user) {
+        let owed = 0;
+
+        user.orders.forEach(order => {
+          !order.paid ? owed += order.price : ''
+        });
+
+        return owed;
+      },
 
       /**
        * Get school and class for user-id
        */
-      getUserSchoolClass: function () {
+      getUserSchoolClassCity: function () {
         axios({
-          url: 'https://parents-children.herokuapp.com/graphql',
+          url: 'http://localhost:1337/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
           },
@@ -101,8 +87,85 @@
         })
       },
 
-      getUsersOfClass: function () {
+      /**
+       * Get one user with current user-id(profile.id)
+       */
+      getCurrentUser: function () {
+        axios({
+          url: 'http://localhost:1337/graphql',
+          headers: {
+            Authorization: `Bearer ${this.token}`
+          },
+          method: 'post',
+          data: {
+            query: `
+            {
+               user(id: ${this.profile.id}) {
+                orders(sort: "id:desc") {
+                  id
+                  paid
+                  price
+                  tallage {
+                    title
+                    description
+                    price
+                  }
+                }
+              }
+            }
+            `
+          }
+        }).then((result) => {
+          // console.log(result.data.data.user);
+          let res = result.data.data.user;
+          // console.log(res);
 
+          res.orders.forEach(order => {
+            this.tallages.push(order.tallage)
+          });
+        })
+      },
+
+
+      /**
+       * Get all Users of class and orders
+       */
+      getUsersOrders: function () {
+        axios({
+          url: 'http://localhost:1337/graphql',
+          headers: {
+            Authorization: `Bearer ${this.token}`
+          },
+          method: 'post',
+          data: {
+            query: `{
+              class(id: ${this.class.id}) {
+                name
+                users (sort: "family:asc"){
+                  name
+                  family
+                  id
+                  orders {
+                    id
+                    price
+                    paid
+                  }
+                }
+              }
+            }`
+          }
+        }).then((result) => {
+          // console.log(result.data.data.class.users);
+          this.users = result.data.data.class.users;
+
+          this.users.forEach(user => {
+            user.owed = this.getOwed(user);
+          })
+
+          // res.orders.forEach(order => {
+          //   this.tallages.push(order.tallage)
+          // });
+        });
       }
     }
 

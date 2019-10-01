@@ -8,6 +8,29 @@
         input.cp__popup-input(type=text v-model='tel' placeholder='Введите Номер телефона')
         textarea.cp__popup-input.cp__popup-input-large(v-model='text' placeholder='Текст обращения')
         button.cp__popup-submit(type=submit @click="submitLeadForm") Отправить заявку
+
+
+    .cp__popup(v-if="showPopupCreateVote")
+      form.cp__popup-form.popup-create-vote
+        .cp__popup-close(@click="showPopupCreateVote = !showPopupCreateVote")
+        label.cp__popup-label Новое голосование
+        input.cp__popup-input.title-create-vote(type=text v-model='titleVote' placeholder='Введите вопрос для обсуждения')
+        .answer-wrapper
+          .answer(v-for='(answer, index) in answers' :key='index')
+            .answer-text(
+              contenteditable='true'
+              autocomplete='off'
+              autocorrect='off'
+              autocapitalize='off'
+              spellcheck='false'
+              tabindex='0'
+            ) {{ answer.text }}
+        .buttons-wrapper
+          .add-answer-button(@click="addNewAnswer") +
+          .add-answer-button(@click="popAnswer") -
+        button.cp__popup-submit(type=submit @submit.prevent="onSubmit" @click="submitCreateVoteForm") Создать голосование
+
+
     .cp__mw.mw
       .cp-tabs
         .cp-tabs__tab(@click="activeTab = 1" :class="{'active-tab': activeTab === 1}")
@@ -46,11 +69,8 @@
               span.cp__hr-text Информация об оплате по классу
             ClassTable()
           div(v-if="meRole == 2 && activeTab===2")
-            Vote(:voteSubmit="false")
-            Vote
-            Vote
-            Vote(:voteActive="false" :voteEnd="true")
-
+            Vote(v-for="vote in votes" :key="vote.id" :vote-submit="vote.submited" :vote-id="vote.id" :vote-end="vote.ended")
+            .add-vote.cp__button(@click="showPopupCreateVote = !showPopupCreateVote") Добавить голосование
           div(v-if="meRole == 2 && activeTab===3")
             Newslc
           div(v-if="meRole == 2 && activeTab===4")
@@ -62,7 +82,7 @@
           //- order(:title="Название" :price="15", :order_id="1", :description="описание")
       .cp__aside
         .cp__aside-wrap
-          .cp__avatar(v-if="photo", :style="'background-image:url(https://parents-children.herokuapp.com' + photo + ')'")
+          .cp__avatar(v-if="photo", :style="'background-image:url(http://localhost:1337' + photo + ')'")
           .cp__avatar(v-else) <svg aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="cp__avatar-no"><path fill="currentColor" d="M324.3 64c3.3 0 6.3 2.1 7.5 5.2l22.1 58.8H464c8.8 0 16 7.2 16 16v288c0 8.8-7.2 16-16 16H48c-8.8 0-16-7.2-16-16V144c0-8.8 7.2-16 16-16h110.2l20.1-53.6c2.3-6.2 8.3-10.4 15-10.4h131m0-32h-131c-20 0-37.9 12.4-44.9 31.1L136 96H48c-26.5 0-48 21.5-48 48v288c0 26.5 21.5 48 48 48h416c26.5 0 48-21.5 48-48V144c0-26.5-21.5-48-48-48h-88l-14.3-38c-5.8-15.7-20.7-26-37.4-26zM256 408c-66.2 0-120-53.8-120-120s53.8-120 120-120 120 53.8 120 120-53.8 120-120 120zm0-208c-48.5 0-88 39.5-88 88s39.5 88 88 88 88-39.5 88-88-39.5-88-88-88z" class=""></path></svg>
           .cp__f {{ profile.family }}
           .cp__io {{ profile.name }} {{ profile.patronymic }}
@@ -72,7 +92,7 @@
           div(v-if="meRole == 2")
             .cp__location
               span.cp__location-school Школа: {{ this.school.name }}
-              span.cp__location-city Оренбург
+              span.cp__location-city {{ this.school.city }}
             .cp__hr
               span.cp__hr-text Информация об оплате {{  }}
             .cp__confirm(v-if="ordersPaid.length > 0")
@@ -113,14 +133,18 @@ export default {
       meRole: false,
       payId: 0,
       payInfo: false,
+      titleVote: '',
       payError: false,
+      showPopupCreateVote: false,
       paySuccess: {
         on: false,
         text: 'Успешно'
       },
+      votes: [],
       school: {
         name: '',
-        id: ''
+        id: '',
+        city: '',
       },
       class: {
         name: '',
@@ -129,7 +153,21 @@ export default {
       activeTab: 1,
       name: '',
       tel: '',
-      text: ''
+      text: '',
+      answers: [
+        {
+          text: 'Первый вариант ответа'
+        },
+        {
+          text: 'Второй вариант ответа'
+        },
+        {
+          text: 'Третий вариант ответа'
+        },
+        {
+          text: 'Четвертый вариант ответа'
+        },
+      ],
     }
   },
   metaInfo: {
@@ -138,7 +176,8 @@ export default {
   mounted: function () {
     this.getUserInfo(); // получаем информацию о пользователе
     this.getMeId();
-    this.getUserSchoolClass();
+    this.getUserSchoolClassCity();
+    this.getVotes(); // получаем данные по всем голосованиям в классе
   },
   computed: {
     ordersPaid: function () {
@@ -156,10 +195,18 @@ export default {
     }
   },
   methods: {
+    addNewAnswer() {
+      this.answers.push({
+        text: 'Новый вариант ответа',
+      });
+    },
+    popAnswer() {
+      this.answers.pop();
+    },
     getOrderToPay (orderId) {
       this.payId = orderId;
       axios({
-        url: 'https://parents-children.herokuapp.com/graphql',
+        url: 'http://localhost:1337/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -196,9 +243,9 @@ export default {
         }
       })
     },
-    orderFinallyPay() {
+    orderFinallyPay () {
       axios({
-        url: 'https://parents-children.herokuapp.com/graphql',
+        url: 'http://localhost:1337/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -228,9 +275,48 @@ export default {
         this.paySuccess.text = `Счёт #${this.payId} успешно оплачен`
       })
     },
+    getVotes () {
+      axios({
+        url: 'http://localhost:1337/graphql',
+        headers: {
+          Authorization: `Bearer ${this.token}`
+        },
+        method: 'post',
+        data: {
+          query: `
+            {
+              user(id: "${this.profile.id}") {
+                class {
+                name
+                votes(sort: "date:desc") {
+                  id
+                  ended
+                  usersvoted {
+                    username
+                    id
+                  }
+                }
+              }
+            }
+          }
+        `
+        }
+      }).then((result) => {
+        // console.log(result.data.data);
+        let votes = result.data.data.user.class.votes;
+        this.votes = Array.from(result.data.data.user.class.votes);
+        this.votes.forEach(
+          vote => { vote.submited = vote.usersvoted.includes({
+              id: this.profile.id,
+              username: this.profile.username,
+            })
+          }
+        )
+      })
+    },
     getUserInfo () {
       axios({
-        url: 'https://parents-children.herokuapp.com/graphql',
+        url: 'http://localhost:1337/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -260,6 +346,7 @@ export default {
           `
         }
       }).then((result) => {
+        // console.log(result.data.data);
         if (result.data.data.user.photo != null) {
           this.photo = result.data.data.user.photo.url
         }
@@ -268,7 +355,7 @@ export default {
       })
     },
     getMeId () {
-      axios.get('https://parents-children.herokuapp.com/users/me' ,{
+      axios.get('http://localhost:1337/users/me' ,{
         headers: {
           Authorization: `Bearer ${this.token}`
         }
@@ -280,9 +367,9 @@ export default {
     /**
      * Get school and class for user-id
      */
-    getUserSchoolClass: function () {
+    getUserSchoolClassCity: function () {
       axios({
-        url: 'https://parents-children.herokuapp.com/graphql',
+        url: 'http://localhost:1337/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -300,6 +387,9 @@ export default {
                   school {
                     id
                     name
+                    city {
+                      city
+                    }
                   }
                 }
               }
@@ -307,13 +397,18 @@ export default {
             `
         }
       }).then((result) => {
-        console.log(result.data.data.user);
+        // console.log(result.data.data.user);
         let res = result.data.data.user;
         this.class.name = res.class.name;
         this.class.id = res.class.id;
-        this.school = res.class.school;
+        this.school.id = res.class.school.id;
+        this.school.name = res.class.school.name;
+        this.school.city = res.class.school.city.city;
+        localStorage.setItem('user-class', JSON.stringify(this.class));
+        localStorage.setItem('user-school', JSON.stringify(this.school));
       })
     },
+
     sendEmail: function () {
       axios.post(`/order.php?name=${this.name}&tel=${this.tel}&text=${this.text}`)
         .then(function (response) {
@@ -323,9 +418,64 @@ export default {
           console.log(error);
         });
     },
+
     submitLeadForm: function () {
       this.sendEmail();
       this.showPopup = !this.showPopup;
+    },
+
+    submitCreateVoteForm: function () {
+      console.log(this.answers);
+      console.log(this.titleVote);
+
+      axios({
+        url: 'http://localhost:1337/graphql',
+        headers: {
+          Authorization: `Bearer ${this.token}`
+        },
+        method: 'post',
+        data: {
+          query: `
+            mutation {
+              createTallage(input: {
+                data: {
+                  title: "${this.tallage.title}"
+                  description: "${this.tallage.description}"
+                  price: ${this.select.totalPrice}
+                  school: ${this.select.school}
+                  class: ${this.select.class}
+                }
+              }) {
+                tallage {
+                  id
+                  title
+                  price
+                  school {
+                    id
+                  }
+                  class {
+                    id
+                  }
+                }
+              }
+            }
+          `
+        }
+      }).then(result => {
+        console.log('Общий счёт создан');
+        tallageId = result.data.data.createTallage.tallage.id;
+        this.creating.tallage = true;
+        // for (let index = 0; index < this.parents.length; index++) {
+        //   console.log(this.parents[index].id)
+        //   console.log(tallageId)
+        //   console.log(this.onePrice)
+        //   this.createOrder(this.parents[index].id, tallageId, this.onePrice)
+        // }
+        this.createOrder(this.parents[0].id, tallageId, this.onePrice)
+      });
+
+      // Update list of Votes from database
+      this.getVotes();
     }
   },
   components: {
@@ -343,6 +493,37 @@ export default {
 <style lang="stylus">
 @import url('https://fonts.googleapis.com/css?family=Rubik&display=swap')
 @import url('https://fonts.googleapis.com/css?family=Roboto&display=swap')
+.cp__popup-form.popup-create-vote
+  height: auto;
+  padding: 1rem 0;
+.cp__popup-input.title-create-vote
+  border: 1px solid #E5E5E5
+  border-radius: 10px;
+  padding: 10px;
+.add-answer-button
+  padding: 10px 20px;
+  background: #e5e5e5;
+  border-radius: 30px;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  margin: 1rem auto 0;
+.buttons-wrapper
+  display: flex
+  flex-direction: row
+  justify-content: space-around
+  width: 50%
+.answer-wrapper
+  margin-top: 1rem
+  display: flex
+  flex-direction: column
+  justify-content: center
+  align-items: center
+.answer
+  &:not(:last-child) {
+    border-bottom: 1px solid #e5e5e5;
+    margin-bottom: .5rem
+  }
 
 .order-success
   background #f9fef6
@@ -441,7 +622,7 @@ export default {
       font-weight: bold
       line-height: 1.6rem
     &-submit
-      margin-top: 1rem
+      margin-top: 2rem
       background: #6D37f4
       color: white
       border: none
@@ -658,4 +839,7 @@ export default {
   &__total--dolg
     background #FF4C45
 
+.add-vote
+  text-align: center
+  margin: 2rem auto 0
 </style>

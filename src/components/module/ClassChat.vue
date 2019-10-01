@@ -17,7 +17,7 @@
     input.chat-input__message(placeholder="Написать сообщение" v-model="mySelf.message")
     a.chat-input__file
       img(src="../../assets/image/clip.svg")
-    button.chat-input__send(@click="sendPersonMessage()")
+    button.chat-input__send(@submit.prevent="onSubmit" @click="sendPersonMessage")
 </template>
 
 <script>

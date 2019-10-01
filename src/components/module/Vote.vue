@@ -1,26 +1,38 @@
 <template lang="html">
   <div class="vote" :class="{'vote-active': voteActive&&!voteSubmit, 'vote-end': voteEnd}">
 
-    <div class="vote-head">
-      <div class="vote-title">Место проведения праздника</div>
-      <div v-if="!voteSubmit" class="vote-date">25 апреля 2019</div>
-      <div v-if="voteSubmit" class="vote-date-passed">Голосование создано: 25 апреля 2019</div>
+    <div class="vote-wrapper flex-row">
+      <div class="vote-head">
+        <div class="vote-title">{{this.vote.title}}</div>
+        <div v-if="!voteSubmit" class="vote-date">{{getDate(vote.date || "")}}</div>
+        <div v-if="voteSubmit" class="vote-date-passed">Голосование создано: {{getDate(vote.date || "")}}</div>
+      </div>
 
+      <div class="vote-state--continue vote-state" v-if="voteSubmit && !voteEnd">Голосование идет</div>
+      <div class="vote-state--end vote-state" v-if="voteSubmit && voteEnd">Голосование окончено</div>
     </div>
 
-    <div class="vote-state--continue" v-if="voteSubmit && !voteEnd">Голосование идет</div>
-    <div class="vote-state--end" v-if="voteSubmit && voteEnd">Голосование окончено</div>
-
-    <form v-if="voteActive && (!voteSubmit)" class="vote-form" action="">
-      <p class="vote-input-wrapper" ><input class="vote-input" name="vote" type="radio" checked value="Парке">Собраться в парке</p>
-      <p class="vote-input-wrapper" ><input class="vote-input" name="vote" type="radio" value="Зал в Армаде">Снять зал в Армаде</p>
-      <p class="vote-input-wrapper" ><input class="vote-input" name="vote" type="radio" value="Пойти с классом в аквапарк">Пойти с классом в аквапарк</p>
-      <p class="vote-input-wrapper" ><input class="vote-input" name="vote" type="radio" value="Никуда не хочу идти">Никуда не идти</p>
+    <form v-if="(!voteSubmit)" class="vote-form">
+      <p class="vote-input-wrapper" v-for="(answer, index) in vote.answers"><input :checked="index === 0" @click="check" class="vote-input" name="vote" type="radio">{{answer.answer}}</p>
       <div class="vote-submit-wrapper">
-        <input @click="voteSubmit = true" class="vote-submit" type="submit" value="Проголосовать">
-        <button class="vote-curator" value="">Связаться с куратором</button>
+        <button @submit.prevent="onSubmit" @click="submitVote" class="vote-submit" type="button">Проголосовать</button>
+        <button class="vote-curator">Связаться с куратором</button>
       </div>
     </form>
+
+    <div class="vote-results-show" v-if="voteSubmit" @click="showResults = !showResults">
+      <span v-if="!showResults">Показать результаты</span>
+      <span v-if="showResults">Скрыть результаты</span>
+    </div>
+
+    <div v-if="showResults" class="vote-results">
+      <ul class="vote-results-list">
+        <li class="vote-results-item" v-for="answer in vote.answers">
+          <span class="vote-results-item__answer">{{answer.answer}}: </span>
+          <span class="vote-results-item__count">{{answer.count}} голос(-а)</span>
+        </li>
+      </ul>
+    </div>
 
 
 
@@ -28,34 +40,207 @@
 </template>
 
 <script>
-    export default {
-      name: "Vote",
-      props: {
-        voteActive : {
-          type: Boolean,
-          default: true,
-        },
-        voteEnd: {
-          type: Boolean,
-          default: false,
-        },
-        voteSubmit: {
-          type: Boolean,
-          default: true,
-        },
+  import axios from 'axios'
+
+  export default {
+    name: "Vote",
+    props: {
+      voteActive : {
+        type: Boolean,
+        default: true,
       },
-    }
+      voteId: String,
+      voteEnd: {
+        type: Boolean,
+        default: false,
+      },
+      voteSubmit: {
+        type: Boolean,
+        default: true,
+      },
+
+    },
+    data() {
+      return {
+        token: localStorage.getItem('user-token'),
+        profile: JSON.parse(localStorage.getItem('user-profile')),
+        vote: {},
+        resultVote: '',
+        showResults: false,
+        checkedAnswer: '',
+      }
+    },
+    mounted: function () {
+      this.voteInit();
+    },
+    methods: {
+      submitVote: function () {
+        this.voteSubmit = !this.voteSubmit;
+        let answer = this.vote.answers.filter(answer => answer.answer === this.checkedAnswer)[0];
+
+        console.log(answer);
+        answer.count++;
+
+        axios({
+          url: 'http://localhost:1337/graphql',
+          headers: {
+            Authorization: `Bearer ${this.token}`
+          },
+          method: 'post',
+          data: {
+            query: `
+            mutation {
+              updateAnswer(input: {
+                where: {
+                  id: "${answer.id}"
+                },
+                data: {
+                  count: ${answer.count}
+                }
+              }) {
+                answer {
+                  id
+                  answer
+                  count
+                }
+              }
+            }
+          `
+          }
+        }).then(result => {
+          // console.log('Голосование прошло успешно');
+          console.log(result);
+        });
+
+        axios({
+          url: 'http://localhost:1337/graphql',
+          headers: {
+            Authorization: `Bearer ${this.token}`
+          },
+          method: 'post',
+          data: {
+            query: `
+            mutation {
+              updateVote(input: {
+                where: {
+                  id: "${vote.id}"
+                },
+                data: {
+                  user: ${answer.count}
+                }
+              }) {
+                answer {
+                  id
+                  answer
+                  count
+                }
+              }
+            }
+          `
+          }
+        }).then(result => {
+          console.log('Голосование прошло успешно');
+          console.log(result);
+        });
+      },
+
+      getDate: function (date) {
+        let monthRu = '';
+        // console.log(date);
+        let dateRow = date.split(' ')[0].split('-');
+        let year = dateRow[0];
+        let month = dateRow[1];
+        let day = dateRow[2];
+
+        switch (month) {
+          case '01': monthRu = 'январь'; break;
+          case '02': monthRu = 'февраля'; break;
+          case '03': monthRu = 'марта'; break;
+          case '04': monthRu = 'апреля'; break;
+          case '05': monthRu = 'мая'; break;
+          case '06': monthRu = 'июня'; break;
+          case '07': monthRu = 'июля'; break;
+          case '08': monthRu = 'августа'; break;
+          case '09': monthRu = 'сентября'; break;
+          case '10': monthRu = 'октября'; break;
+          case '11': monthRu = 'ноября'; break;
+          case '12': monthRu = 'декабря'; break;
+        }
+
+        return `${day} ${monthRu} ${year}`
+      },
+
+      voteInit: function () {
+        axios({
+          url: 'http://localhost:1337/graphql',
+          headers: {
+            Authorization: `Bearer ${this.token}`
+          },
+          method: 'post',
+          data: {
+            query: `{
+              vote(id: ${ this.voteId }) {
+                title
+                date
+                answers(sort: "answer:asc") {
+                  id
+                  answer
+                  count
+                }
+              }
+            }`
+          }
+        }).then((result) => {
+          // console.log(result.data.data.vote);
+          this.vote = result.data.data.vote;
+          this.checkedAnswer = this.vote.answers[0].answer;
+          this.submitAnswer = this.vote.answers.filter(answer => answer === this.checkedAnswer)[0];
+        })
+      },
+      check: function (e) {
+        // console.log(e.target.parentElement.textContent);
+        this.checkedAnswer = e.target.parentElement.textContent;
+
+        this.getResultOfVote();
+      },
+
+      getResultOfVote: function () {
+
+      }
+    },
+  }
 </script>
 
 <style scoped lang="stylus">
-  .vote
+  .vote-wrapper {
+    width: 100%
+    justify-content: space-between
+  }
+  .flex-row {
     display: flex
     flex-direction: row
+  }
+  .vote
+    display: flex
+    flex-direction: column
     align-items: center
     justify-content: space-between
     background: #F9F9F9
     color: #37445E;
-    padding: 26px 39px;
+    padding: 26px 39px 10px;
+    &-state
+      display: flex
+      align-items: center
+    &-results-show
+      margin: 1rem 0
+      font-size: .7rem
+      cursor: pointer
+    &-results
+      width: 100%
+      &-item
+        display: flex
+        flex-direction: row
+        justify-content: space-between
     &:not(:first-child)
       margin-top: 13px
     .vote-state--continue
@@ -135,6 +320,7 @@
     flex-direction: column
     align-items: normal
     .vote-head
+      width: 100%;
       display: flex
       flex-direction: row
       align-items: center
@@ -148,5 +334,6 @@
         font-weight: 600;
         font-size: .85rem;
         line-height: 1.2rem;
+
 
 </style>

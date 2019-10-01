@@ -77,7 +77,7 @@
     methods: {
       register: function () {
         axios
-          .post('https://parents-children.herokuapp.com/auth/local/register', {
+          .post('http://localhost:1337/auth/local/register', {
             username: this.username,
             email: this.email,
             password: this.password,

@@ -70,7 +70,7 @@ export default {
       let talId = id;
       this.delStart = 1;
       axios({
-        url: 'https://parents-children.herokuapp.com/graphql',
+        url: 'http://localhost:1337/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -98,7 +98,7 @@ export default {
     deleteOrders: function (orderId) {
       let orderI = orderId;
       axios({
-        url: 'https://parents-children.herokuapp.com/graphql',
+        url: 'http://localhost:1337/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },

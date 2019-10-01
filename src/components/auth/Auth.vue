@@ -40,7 +40,7 @@ export default {
   methods: {
     login: function () {
       axios
-        .post('https://parents-children.herokuapp.com/auth/local', {
+        .post('http://localhost:1337/auth/local', {
             identifier: this.username,
             password: this.password
         })

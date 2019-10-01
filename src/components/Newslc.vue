@@ -39,7 +39,7 @@ export default {
   methods: {
     getPosts () {
       axios({
-        url: 'https://parents-children.herokuapp.com/graphql',
+        url: 'http://localhost:1337/graphql',
         method: 'post',
         data: {
           query: `
