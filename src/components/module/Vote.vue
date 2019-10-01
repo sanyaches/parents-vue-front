@@ -167,7 +167,8 @@
           case '12': monthRu = 'декабря'; break;
         }
 
-        return `${day} ${monthRu} ${year}`
+        // return `${day} ${monthRu} ${year}`
+        return '25 сентября 2019'
       },
 
       voteInit: function () {

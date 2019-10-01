@@ -28,7 +28,7 @@
         .buttons-wrapper
           .add-answer-button(@click="addNewAnswer") +
           .add-answer-button(@click="popAnswer") -
-        button.cp__popup-submit(type=submit @submit.prevent="onSubmit" @click="submitCreateVoteForm") Создать голосование
+        button.cp__popup-submit(type=submit @submit.prevent="submittedCreateVote" @click="submitCreateVoteForm") Создать голосование
 
 
     .cp__mw.mw
@@ -69,7 +69,7 @@
               span.cp__hr-text Информация об оплате по классу
             ClassTable()
           div(v-if="meRole == 2 && activeTab===2")
-            Vote(v-for="vote in votes" :key="vote.id" :vote-submit="vote.submited" :vote-id="vote.id" :vote-end="vote.ended")
+            Vote(v-for="vote in getVotes" :key="vote.id" :vote-submit="vote.submited" :vote-id="vote.id" :vote-end="vote.ended")
             .add-vote.cp__button(@click="showPopupCreateVote = !showPopupCreateVote") Добавить голосование
           div(v-if="meRole == 2 && activeTab===3")
             Newslc
@@ -135,6 +135,7 @@ export default {
       payInfo: false,
       titleVote: '',
       payError: false,
+      newVote: {},
       showPopupCreateVote: false,
       paySuccess: {
         on: false,
@@ -177,7 +178,7 @@ export default {
     this.getUserInfo(); // получаем информацию о пользователе
     this.getMeId();
     this.getUserSchoolClassCity();
-    this.getVotes(); // получаем данные по всем голосованиям в классе
+    // this.getVotes(); // получаем данные по всем голосованиям в классе
   },
   computed: {
     ordersPaid: function () {
@@ -192,7 +193,47 @@ export default {
     },
     totalPriceFunc: function () {
       return this.ordersWait.reduce((s, i) => s = s + i.price, 0);
-    }
+    },
+    getVotes: function () {
+      axios({
+        url: 'http://localhost:1337/graphql',
+        headers: {
+          Authorization: `Bearer ${this.token}`
+        },
+        method: 'post',
+        data: {
+          query: `
+            {
+              user(id: "${this.profile.id}") {
+                class {
+                name
+                votes(sort: "date:desc") {
+                  id
+                  ended
+                  usersvoted {
+                    username
+                    id
+                  }
+                }
+              }
+            }
+          }
+        `
+        }
+      }).then((result) => {
+        // console.log(result.data.data);
+        let votes = result.data.data.user.class.votes;
+        this.votes = Array.from(result.data.data.user.class.votes);
+        this.votes.forEach(
+          vote => { vote.submited = vote.usersvoted.includes({
+            id: this.profile.id,
+            username: this.profile.username,
+          })
+          }
+        )
+      });
+      return this.votes;
+    },
   },
   methods: {
     addNewAnswer() {
@@ -273,45 +314,6 @@ export default {
         this.getUserInfo() // обновляем список счетов
         this.paySuccess.on = true // включаем сообщение об успехе
         this.paySuccess.text = `Счёт #${this.payId} успешно оплачен`
-      })
-    },
-    getVotes () {
-      axios({
-        url: 'http://localhost:1337/graphql',
-        headers: {
-          Authorization: `Bearer ${this.token}`
-        },
-        method: 'post',
-        data: {
-          query: `
-            {
-              user(id: "${this.profile.id}") {
-                class {
-                name
-                votes(sort: "date:desc") {
-                  id
-                  ended
-                  usersvoted {
-                    username
-                    id
-                  }
-                }
-              }
-            }
-          }
-        `
-        }
-      }).then((result) => {
-        // console.log(result.data.data);
-        let votes = result.data.data.user.class.votes;
-        this.votes = Array.from(result.data.data.user.class.votes);
-        this.votes.forEach(
-          vote => { vote.submited = vote.usersvoted.includes({
-              id: this.profile.id,
-              username: this.profile.username,
-            })
-          }
-        )
       })
     },
     getUserInfo () {
@@ -424,11 +426,36 @@ export default {
       this.showPopup = !this.showPopup;
     },
 
-    submitCreateVoteForm: function () {
+    /**
+     * Format date from new Date() to '2019-09-01 00:00:00'
+     * @param dateNow - new Date()
+     * @returns {string} - str('2019-09-01 00:00:00')
+     */
+    getDateNow: function(dateNow) {
+      //Add year
+      let strDate = dateNow.getFullYear();
+      strDate += '-';
+
+      //Add month
+      dateNow.getMonth() < 10 ? strDate += '0' + dateNow.getMonth() : strDate += dateNow.getMonth();
+      strDate += '-';
+
+      //Add days of month
+      dateNow.getDate() < 10 ? strDate += '0' + dateNow.getDate() : strDate += dateNow.getDate();
+
+      //Add hh:mm:ss
+      // strDate += " 00:00:00";
+
+      return strDate;
+    },
+
+    submitCreateVoteForm : async function () {
       console.log(this.answers);
       console.log(this.titleVote);
+      let date = new Date().getDate();
 
-      axios({
+      //create new vote
+      await axios ({
         url: 'http://localhost:1337/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
@@ -437,24 +464,21 @@ export default {
         data: {
           query: `
             mutation {
-              createTallage(input: {
+              createVote(input: {
                 data: {
-                  title: "${this.tallage.title}"
-                  description: "${this.tallage.description}"
-                  price: ${this.select.totalPrice}
-                  school: ${this.select.school}
-                  class: ${this.select.class}
+                  title: "${this.titleVote}"
+                  ended: false
+                  date: "${date}"
+                  class: ${this.class.id}
                 }
               }) {
-                tallage {
+                vote {
                   id
                   title
-                  price
-                  school {
-                    id
-                  }
+                  ended
+                  date
                   class {
-                    id
+                    name
                   }
                 }
               }
@@ -462,20 +486,51 @@ export default {
           `
         }
       }).then(result => {
-        console.log('Общий счёт создан');
-        tallageId = result.data.data.createTallage.tallage.id;
-        this.creating.tallage = true;
-        // for (let index = 0; index < this.parents.length; index++) {
-        //   console.log(this.parents[index].id)
-        //   console.log(tallageId)
-        //   console.log(this.onePrice)
-        //   this.createOrder(this.parents[index].id, tallageId, this.onePrice)
-        // }
-        this.createOrder(this.parents[0].id, tallageId, this.onePrice)
+        console.log('Вопрос создан');
+        this.newVote = result.data.data.createVote.vote;
+        console.log(result.data.data.createVote.vote);
       });
 
-      // Update list of Votes from database
-      this.getVotes();
+      this.answers.forEach((answer, index) => {
+        axios({
+          url: 'http://localhost:1337/graphql',
+          headers: {
+            Authorization: `Bearer ${this.token}`
+          },
+          method: 'post',
+          data: {
+            query: `
+            mutation {
+              createAnswer(input: {
+                data: {
+                  answer: "${answer.text}"
+                  count: 0
+                  vote: "${this.newVote.id}"
+                }
+              }) {
+                answer {
+                  id
+                  answer
+                  count
+                  vote {
+                    title
+                    id
+                  }
+                }
+              }
+            }
+          `
+          }
+        }).then(result => {
+          console.log('Ответ создан: #'+index);
+          console.log(result.data.data.createAnswer.answer);
+        });
+
+      });
+
+    },
+    submittedCreateVote: function () {
+      this.showPopupCreateVote = !this.showPopupCreateVote;
     }
   },
   components: {
