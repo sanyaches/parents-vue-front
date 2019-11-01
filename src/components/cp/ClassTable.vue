@@ -10,8 +10,8 @@
 
         tr.table-row(v-for="(user, index) in users")
           td.table-cell {{ index+1 }}
-          td.table-cell.table-cell-name {{ user.family }} {{ user.name }}
-          td.table-cell.table-cell-count(v-for="order in user.orders") {{ order.paid ? order.price+'руб.': '-' }}
+          td.table-cell.table-cell-name {{ user.family }} {{ user.name }} ({{user.childname}})
+          td.table-cell.table-cell-count(v-for="order in user.orders") {{ order.paid ? order.price==='-' ? '(отсутствовал)' : order.price+'руб.': '-' }}
           td.table-cell.table-cell-residue {{ user.owed ? user.owed + ' руб.' : '0 руб.' }}
 
 </template>
@@ -23,8 +23,10 @@
     data() {
       return {
         school: JSON.parse(localStorage.getItem('user-school')),
+        childname: '',
         users: [], //
         tallages: [], //
+        maxOrders: '',
         class: JSON.parse(localStorage.getItem('user-class')),
         profile: JSON.parse(localStorage.getItem('user-profile')),
         token: localStorage.getItem('user-token'),
@@ -52,8 +54,8 @@
       /**
        * Get school and class for user-id
        */
-      getUserSchoolClassCity: function () {
-        axios({
+      getUserSchoolClassCity: async function () {
+       await axios({
           url: 'http://localhost:1337/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
@@ -100,32 +102,22 @@
           data: {
             query: `
             {
-               user(id: ${this.profile.id}) {
-                orders(sort: "id:desc") {
-                  id
-                  paid
-                  price
-                  tallage {
-                    title
-                    description
-                    price
-                  }
-                }
-              }
+               tallages(sort:"id:asc", where : {
+                class: "${this.class.id}"
+               }) {
+                  title
+               }
             }
             `
           }
         }).then((result) => {
           // console.log(result.data.data.user);
-          let res = result.data.data.user;
-          // console.log(res);
-
-          res.orders.forEach(order => {
-            this.tallages.push(order.tallage)
-          });
+          this.tallages = result.data.data.tallages;
         })
+        .catch(error => {
+          console.log(error);
+        });
       },
-
 
       /**
        * Get all Users of class and orders
@@ -141,7 +133,11 @@
             query: `{
               class(id: ${this.class.id}) {
                 name
-                users (sort: "family:asc"){
+                users (sort: "family:asc",
+                where :{
+                  role: "2"
+                }){
+                  childname
                   name
                   family
                   id
@@ -157,14 +153,26 @@
         }).then((result) => {
           // console.log(result.data.data.class.users);
           this.users = result.data.data.class.users;
+          let maxLengthOrders = 0;
 
           this.users.forEach(user => {
+            user.orders.length > maxLengthOrders ? maxLengthOrders = user.orders.length : '';
             user.owed = this.getOwed(user);
-          })
+          });
 
-          // res.orders.forEach(order => {
-          //   this.tallages.push(order.tallage)
-          // });
+          this.maxOrders = maxLengthOrders;
+          this.addEmptyOrders();
+        });
+      },
+
+      addEmptyOrders() {
+        this.users.forEach(user => {
+          while (user.orders.length !== this.maxOrders) {
+            user.orders.unshift({
+              paid: true,
+              price: '-'
+            });
+          }
         });
       }
     }

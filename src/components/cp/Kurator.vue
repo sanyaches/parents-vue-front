@@ -46,7 +46,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="wait__spin"><path fill="currentColor" d="M288 32c0 17.673-14.327 32-32 32s-32-14.327-32-32 14.327-32 32-32 32 14.327 32 32zm-32 416c-17.673 0-32 14.327-32 32s14.327 32 32 32 32-14.327 32-32-14.327-32-32-32zm256-192c0-17.673-14.327-32-32-32s-32 14.327-32 32 14.327 32 32 32 32-14.327 32-32zm-448 0c0-17.673-14.327-32-32-32S0 238.327 0 256s14.327 32 32 32 32-14.327 32-32zm33.608 126.392c-17.673 0-32 14.327-32 32s14.327 32 32 32 32-14.327 32-32-14.327-32-32-32zm316.784 0c-17.673 0-32 14.327-32 32s14.327 32 32 32 32-14.327 32-32-14.327-32-32-32zM97.608 65.608c-17.673 0-32 14.327-32 32 0 17.673 14.327 32 32 32s32-14.327 32-32c0-17.673-14.327-32-32-32z"></path></svg>
             .wait__text Пожалуйста, подождите..
     .kurator__content(v-if="tab == 2")
-      Tallage(v-for="(item, index) in tallages", :tallage_id="item.id", :title="item.title", :description="item.description", :price="item.price", :school="item.school.name", :classe="item.class.name", :orders="tallages[index].orders", :key="item.id")
+      Tallage(v-for="(item, index) in tallages", :tallage_id="item.id", @update="getTallages" :title="item.title", :description="item.description", :price="item.price", :school="item.school.name", :classe="item.class.name", :orders="tallages[index].orders", :key="item.id")
 </template>
 
 <script>
@@ -412,9 +412,19 @@ export default {
         position absolute
   &__price
     position relative
+    display: flex
+    align-items: center
     &--ok
       color #42aa00
 
+  &__pay
+    display: flex
+    align-items: center
+    margin-left: .4rem
+    padding: .5rem;
+    cursor: pointer;
+    color: #ffffff
+    background: #6D37f4
 .kurator
   position relative
   &__tab

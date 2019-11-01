@@ -17,6 +17,7 @@
           .elems__name {{ item.user.family + ' ' + item.user.name + ' ' + item.user.patronymic }} 
           .elems__price(v-if="item.paid !== true") не оплачено <b>{{ item.price }}</b> ₽
           .elems__price.elems__price--ok(v-else) <b>оплачено</b>
+          .elems__pay(v-if="item.paid !== true" @click="payOrder(item.id)") Сдал
       .tallage__block
         span.tallage__del(@click="delShow = !delShow") Удалить счета
         .tallage__del-info(v-show="delShow") Для удаления всех счетов напишите название сборов «{{ title }}»
@@ -124,6 +125,41 @@ export default {
           console.log('Все счета удалены')
         }
       })
+    },
+    payOrder: function (orderId) {
+      axios({
+        url: 'http://localhost:1337/graphql',
+        headers: {
+          Authorization: `Bearer ${this.token}`
+        },
+        method: 'post',
+        data: {
+          query: `
+            mutation {
+              updateOrder(input: {
+                where: {
+                  id: "${orderId}"
+                },
+                data: {
+                  paid: true
+                }
+              }) {
+                order {
+                  paid
+                }
+              }
+            }
+          `
+        }
+      }).then(result => {
+        console.log('Счет успешно оплачен');
+        console.log(result.data.data.order);
+        this.$emit('update');
+      })
+      .catch(error => {
+        console.log('Ошибка погашения');
+        console.log(error);
+      })
     }
   },
   components: {
@@ -190,6 +226,7 @@ export default {
     margin-top 40px
   &__parent
     padding 20px
+
   &__wrap
     padding 0 20px 0 20px
     display flex

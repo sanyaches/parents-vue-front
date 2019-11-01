@@ -20,6 +20,27 @@
               option(value="Учитель") Учитель
               option(value="Куратор") Куратор
             label.input__label Выберите роль
+
+          //Select city
+          .input
+            select#city.input__text(
+              v-model="city"
+            )
+              option(v-for="oneCity in cities") {{ oneCity.city }}
+            label.input__label Выберите Город
+
+          .input(v-if="showSchoolSelect")
+            select#school.input__text(
+              v-model="school"
+            )
+              option(v-for="oneSchool in schools") {{oneSchool.name}}
+            label.input__label Выберите Школу
+          .input(v-if="showClassSelect")
+            select#class.input__text(
+              v-model="selectClass"
+            )
+              option(v-for="oneClass in classes") {{oneClass.name}}
+            label.input__label Выберите Класс
           .input
             input#password.input__text(
               required,
@@ -54,6 +75,12 @@
               type="text"
             )
             label.input__label(for='patronomyc') Введите Отчество
+          .input
+            input#childname.input__text(
+              v-model="childname",
+              type="text"
+            )
+            label.input__label(for='childname') Имя ребенка
           button.button(type='submit') Зарегистрироваться
 </template>
 
@@ -64,19 +91,56 @@
     name: "Registration",
     data() {
       return {
+        token: '',
+        profile: {},
         username: '',
         password: '',
         email: '',
         role: '',
         family: '',
         name: '',
-
+        patronomyc: '',
+        childname: '',
+        showSchoolSelect: false,
+        showClassSelect: false,
+        cities: [],
+        city: '',
+        schools: [],
+        school: {},
+        classId: '',
+        classes: [],
+        selectClass: '',
         onerr: false
       }
     },
+    mounted: function() {
+      this.getCities();
+    },
     methods: {
-      register: function () {
-        axios
+      getClassId: async function() {
+        await axios({
+          url: 'http://localhost:1337/graphql',
+          method: 'post',
+          data: {
+            query: `
+            {
+             classes(
+              where: {
+              name: "${this.selectClass}"
+             }) {
+              id
+              name
+              }
+            }
+            `
+          }
+        }).then((result) => {
+          this.classId = result.data.data.classes.shift().id;
+          console.log(this.classId);
+        })
+      },
+    register: async function () {
+       await axios
           .post('http://localhost:1337/auth/local/register', {
             username: this.username,
             email: this.email,
@@ -84,11 +148,11 @@
           })
           .then(response => {
             // Handle success.
-            // localStorage.setItem('user-token', response.data.jwt);
-            // localStorage.setItem('user-profile', JSON.stringify(response.data.user));
+            localStorage.setItem('user-token', response.data.jwt);
+            localStorage.setItem('user-profile', JSON.stringify(response.data.user));
+            this.token = localStorage.getItem('user-token');
+            this.profile = JSON.parse(localStorage.getItem('user-profile'));
 
-            this.$router.push('/client');
-            history.go(0);
           })
           .catch(error => {
             // Handle error.
@@ -98,8 +162,12 @@
             this.email = '';
             this.role = '';
           });
-        this.sendEmail();
-      },
+
+
+      this.sendEmail();
+
+      this.updateRegisteredUser();
+    },
 
       sendEmail: function () {
         axios.post(`/send.php?role=${this.role}&emaill=${this.email}&user=${this.username}`)
@@ -109,8 +177,159 @@
           .catch(function (error) {
             console.log(error);
           });
+      },
+
+      updateRegisteredUser: async function() {
+        //update vote
+        await axios({
+          url: 'http://localhost:1337/graphql',
+          method: 'post',
+          headers: {
+            Authorization: `Bearer ${this.token}`
+          },
+          data: {
+            query: `
+            mutation {
+              updateUser(input: {
+                where: {
+                  id: "${this.profile.id}"
+                },
+                data: {
+                  name: "${this.name}"
+                  family: "${this.family}"
+                  patronymic: "${this.patronomyc}"
+                  childname: "${this.childname}"
+                  class: "${this.classId}"
+                }
+              }) {
+                user {
+                  id
+                  name
+                  family
+                  patronymic
+                  childname
+                  class {
+                    name
+                    id
+                  }
+                }
+              }
+            }
+          `
+          }
+        }).then(result => {
+          console.log('Пользователю передались личные данные');
+          console.log(result);
+        })
+        .catch(error => {
+          console.log('Пользователю НЕ передались личные данные, ошибка!!! ');
+          console.log(error);
+        });
+
+        localStorage.removeItem('user-token');
+        localStorage.removeItem('user-profile');
+        this.$router.push('/client');
+        history.go(0);
+      },
+
+      getCities: function () {
+        axios({
+          url: 'http://localhost:1337/graphql',
+          method: 'post',
+          data: {
+            query: `
+            {
+              cities(sort: "id:asc") {
+                id
+                city
+              }
+            }
+          `
+          }
+        }).then((result) => {
+          // console.log(result.data.data);
+          this.cities = result.data.data.cities;
+        });
+      },
+
+      selectedCity: function () {
+
+        if (!this.showSchoolSelect) {
+          this.showSchoolSelect = !this.showSchoolSelect;
+        }
+
+        axios({
+          url: 'http://localhost:1337/graphql',
+          method: 'post',
+          data: {
+            query: `
+            {
+             cities(
+              where: {
+              city: "${this.city}"
+             }) {
+              id
+              city
+              schools(sort: "name:asc") {
+                name
+                id
+              }
+             }
+            }`
+          }
+        }).then((result) => {
+          console.log(result.data.data);
+          this.schools = result.data.data.cities.shift().schools;
+        });
+      },
+
+      selectedSchool: function () {
+        if (!this.showClassSelect) {
+          this.showClassSelect = !this.showClassSelect;
+        }
+        console.log(this.school);
+
+        axios({
+          url: 'http://localhost:1337/graphql',
+          method: 'post',
+          data: {
+            query: `
+              {
+               schools(
+                where: {
+                name: "${this.school}"
+               }) {
+                id
+                name
+                classes(sort: "name:asc") {
+                  name
+                  id
+                }
+               }
+              }`
+          }
+        }).then((result) => {
+          console.log(result.data.data);
+          this.classes = result.data.data.schools.shift().classes;
+        });
+      },
+
+
+    },
+
+    watch: {
+      city () {
+        this.selectedCity();
+      },
+      school () {
+        this.selectedSchool();
+      },
+      selectClass () {
+        this.getClassId();
       }
-    }
+    },
+
+
   }
 
 </script>
@@ -123,8 +342,9 @@
     font-size: 2rem
     text-align: center
     width: 500px
-    margin-top: 40px
-    position: absolute
+    margin: 40px 0
+    display: block
   .button
     max-width: 100%
+    margin-bottom: 4rem
 </style>

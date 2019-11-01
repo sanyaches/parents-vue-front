@@ -3,9 +3,9 @@
 
     <div class="vote-wrapper flex-row">
       <div class="vote-head">
-        <div class="vote-title">{{this.vote.title}}</div>
-        <div v-if="!voteSubmit" class="vote-date">{{getDate(vote.date || "")}}</div>
-        <div v-if="voteSubmit" class="vote-date-passed">Голосование создано: {{getDate(vote.date || "")}}</div>
+        <div class="vote-title">{{vote.title}}</div>
+        <div v-if="!voteSubmit" class="vote-date">{{vote.created}}</div>
+        <div v-if="voteSubmit" class="vote-date-passed">Голосование создано: {{vote.created}}</div>
       </div>
 
       <div class="vote-state--continue vote-state" v-if="voteSubmit && !voteEnd">Голосование идет</div>
@@ -75,10 +75,10 @@
     },
     methods: {
       submitVote: function () {
-        this.voteSubmit = !this.voteSubmit;
+        // this.voteSubmit = !this.voteSubmit;
         let answer = this.vote.answers.filter(answer => answer.answer === this.checkedAnswer)[0];
-
-        console.log(answer);
+        console.log('ID пользователя'+ this.profile.id);
+        console.log('ID голосования' + this.voteId);
         answer.count++;
 
         axios({
@@ -110,8 +110,13 @@
         }).then(result => {
           // console.log('Голосование прошло успешно');
           console.log(result);
+        })
+        .catch(error => {
+          console.log('submitVote-Answer');
+          console.log(error);
         });
 
+        // Add row to Userstovotes table with voted User and passed Vote
         axios({
           url: 'http://localhost:1337/graphql',
           headers: {
@@ -121,18 +126,21 @@
           data: {
             query: `
             mutation {
-              updateVote(input: {
-                where: {
-                  id: "${vote.id}"
-                },
+              createUserstovotes(input: {
                 data: {
-                  user: ${answer.count}
+                  user: "${this.profile.id}"
+                  vote: "${this.voteId}"
                 }
               }) {
-                answer {
-                  id
-                  answer
-                  count
+                userstovote {
+                  user {
+                    id
+                    username
+                  }
+                  vote {
+                    id
+                    title
+                  }
                 }
               }
             }
@@ -141,6 +149,11 @@
         }).then(result => {
           console.log('Голосование прошло успешно');
           console.log(result);
+          this.$emit('get-votes');
+        })
+        .catch(error => {
+          console.log('submitVote');
+          console.log(error);
         });
       },
 
@@ -182,7 +195,7 @@
             query: `{
               vote(id: ${ this.voteId }) {
                 title
-                date
+                created
                 answers(sort: "answer:asc") {
                   id
                   answer
@@ -197,6 +210,10 @@
           this.checkedAnswer = this.vote.answers[0].answer;
           this.submitAnswer = this.vote.answers.filter(answer => answer === this.checkedAnswer)[0];
         })
+        .catch(error => {
+          console.log('voteInit');
+          console.log(error);
+        });
       },
       check: function (e) {
         // console.log(e.target.parentElement.textContent);
