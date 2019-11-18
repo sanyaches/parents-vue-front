@@ -6,7 +6,7 @@
         .new__wrap
           .new__wrap_finger
           router-link.new__link(:to="'/new/' + item.id")
-            .new__bg(:style="'background-image: url(http://localhost:1337' + item.image.url + ')'")
+            .new__bg(:style="'background-image: url(https://parents-children.herokuapp.com' + item.image.url + ')'")
           h3.new__title
             router-link.new__a(:to="'/new/' + item.id") {{ item.title }}
         .new__date {{ item.created_at }}
@@ -30,7 +30,7 @@
         },
         created: function () {
         axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           method: 'post',
           data: {
             query: `

@@ -5,20 +5,20 @@
       .kurator__a(@click="tab = 2", :class="{ 'kurator__a--active' : tab == 2 }") Все счета
     .kurator__content(v-if="tab == 1")
       .block(v-if="!select.school")
-        .block__title Выберите школу
+        .block__title Выберите школу/сад
         .elems(v-for="item in schools")
           .elems__id {{ '#' + item.id }}
           .elems__name {{ item.name }}
           .elems__select(@click="getClasses(item.id)") Выбрать
       .block(v-if="select.school && !select.class")
-        .block__link(@click="backToSchool()") ← к выбору школы
-        .block__title Выберите класс
+        .block__link(@click="backToSchool()") ← к выбору школы/сада
+        .block__title Выберите класс/группу
         .elems(v-for="item in classes")
           .elems__id {{ '#' + item.id }}
           .elems__name {{ item.name }}
           .elems__select(@click="getOneClass(item.id)") Выбрать
       .block(v-if="select.school && select.class && !creating.start")
-        .block__link(@click="backToClasses()") ← к выбору класса
+        .block__link(@click="backToClasses()") ← к выбору класса/группы
         div(v-if="parents.length > 0")
           .block__title Введите данные для выставления счёта родителям «{{ className }}»
           .input
@@ -36,7 +36,7 @@
                 .elems__name {{ item.family + ' ' + item.name + ' ' + item.patronymic }} 
                 .elems__price <b>{{ onePrice }}</b> ₽
             .button.button--c(v-if="onePrice", @click="createTallage()") Выставить счёт
-        .block__title(v-else) За этим классом никто не закреплён
+        .block__title(v-else) За этим классом/группой никто не закреплён
       .block(v-if="creating.start")
         div(v-if="creating.tallage && creating.orders == parents.length")
           .block__title Все счета выставлены ({{ creating.orders }})
@@ -61,6 +61,8 @@ export default {
       schools: [],
       classes: [],
       className: '',
+      classObj: JSON.parse(localStorage.getItem('user-class')),
+      schoolObj: JSON.parse(localStorage.getItem('user-school')),
       parents: [],
       select: {
         school: '',
@@ -96,8 +98,8 @@ export default {
     }
   },
   mounted: function () {
-    this.getSchools()
-    this.getTallages()
+    this.getSchools();
+    this.getTallages();
   },
   methods: {
     clearVars () {
@@ -118,7 +120,7 @@ export default {
     },
     getSchools () {
       axios({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://parents-children.herokuapp.com/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -126,7 +128,10 @@ export default {
         data: {
           query: `
             {
-              schools(sort: "id:desc") {
+              schools(sort: "id:desc",
+              where: {
+                id: ${this.schoolObj.id}
+              }) {
                 id
                 name
               }
@@ -142,7 +147,7 @@ export default {
       let schoolId = id;
       this.select.school = schoolId;
       axios({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://parents-children.herokuapp.com/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -151,7 +156,9 @@ export default {
           query: `
             {
               school(id: ${schoolId}) {
-                classes {
+                classes(where: {
+                id: ${this.classObj.id}
+                }){
                   id
                   name
                 }
@@ -167,7 +174,7 @@ export default {
       let classId = id;
       this.select.class = classId;
       axios({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://parents-children.herokuapp.com/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -177,7 +184,9 @@ export default {
             {
               class(id: ${classId}) {
                 name
-                users {
+                users(where :{
+                  role: "2"
+                }) {
                   id
                   name
                   family
@@ -200,7 +209,7 @@ export default {
       this.creating.start = true;
       window.scrollTo(0, 0);
       axios({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://parents-children.herokuapp.com/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -250,7 +259,7 @@ export default {
           tId = tallageId,
           oPrice = onePrice;
       axios({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://parents-children.herokuapp.com/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -293,7 +302,7 @@ export default {
     },
     getTallages () {
       axios({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://parents-children.herokuapp.com/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -311,6 +320,7 @@ export default {
                 }
                 class {
                   name
+                  id
                 }
                 orders {
                   id
@@ -326,7 +336,7 @@ export default {
                       school {
                         name
                       }
-                    } 
+                    }
                   }
                 }
               }
@@ -334,7 +344,9 @@ export default {
           `
         }
       }).then(result => {
-        this.tallages = result.data.data.tallages;
+        this.tallages = result.data.data.tallages.filter( tallage => {
+          return tallage.class.id === this.classObj.id
+        });
       })
     }
   },

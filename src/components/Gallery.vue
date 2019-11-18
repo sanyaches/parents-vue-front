@@ -1,24 +1,28 @@
 <template lang="pug">
   .wrapper
     form.form.flex-column(@submit.prevent="onSubmit" v-if="showFormEventCreate")
+      .form-close(@click="showFormEventCreate = !showFormEventCreate")
       .flex-row.space-around.aic
         label Создание события
-        input.input(v-model="eventName" placeholder="Название события")
+        input.input(v-model="eventName" @input="clearEventErr" placeholder="Название события")
+      .error(v-if="errorEventForm.exist") {{errorEventForm.text}}
       button.button.button-form(@click="createEvent") Создать событие
-    form.form.add-photo.flex-column(@submit.prevent="onSubmit" v-if="showFormAddPhoto")
-      .flex-row.space-around.aic
+    form.form.add-photo.flex-column(@submit.prevent="onSubmit" v-show="showFormAddPhoto")
+      .form-close(@click="showFormAddPhoto = !showFormAddPhoto")
+      .flex-column.space-around.aic
         label Добавление фото
-        input(type="file" name="files")
+        input#imageUploadFile(type="file" name="files" @input="clearPhotoErr")
         input(type="text" name="ref" value="photo" v-show="false")
         input(type="text" name="refId" :value="photoId" v-show="false")
         input(type="text" name="field" value="image" v-show="false")
+      .error(v-if="errorPhotoForm.exist") {{errorPhotoForm.text}}
       button.button.button-form(@click="addPhoto") Добавить фотографию
     .buttons.flex-row.jcc
       button.button(v-if="!galleryExist" @click="createGallery") Создать галерею
       .flex-row(v-else)
         button.button(type="submit"
           @click="showFormEventCreate = !showFormEventCreate"
-          v-show="!showFormEventCreate") Создать событие
+          v-show="!showFormEventCreate && !showFormAddPhoto") Создать событие
         //button.button(type="submit"
           @click="createPhoto"
           v-show="!showFormAddPhoto") Добавить фото
@@ -29,38 +33,106 @@
           span  - {{ event.timeStamp }}
       .spotlight-group.gallery
         .spotlight.gallery-image(v-for='(photo, index) in event.photos'
-          :data-src="`http://localhost:1337${photo.image.url}`"
+          :data-src="`https://parents-children.herokuapp.com${photo.image.url}`"
           :key="index")
           .gallery-image-desc
             .gallery-image-desc__name {{ event.eventName }}
             .gallery-image-desc__date {{ event.timeStamp }}
-          img.gallery-image-picture(:src="`http://localhost:1337${photo.image.url}`")
-        .gallery-add-image(@click="createPhoto(event.id)") +
+          img.gallery-image-picture(:src="`https://parents-children.herokuapp.com${photo.image.url}`")
+        .add-image-wrap
+          .gallery-add-image(@click="createPhoto(event.id)") +
 </template>
 
 <script>
   import axios from 'axios';
+  const errorEmptyEventName = 'Введите название события и повторите попытку!';
+  const errorEmptyPhoto = 'Не найдено изображение, загрузите и повторите попытку добавления!';
 
   export default {
     name: "Gallery",
+
     data() {
       return {
         class: JSON.parse(localStorage.getItem('user-class')),
         galleryExist: false,
         galleryId: '',
         eventName: '',
-        photoId: '',
+        eventId: '',
+        photoId: localStorage.getItem('photo-id'),
         token: localStorage.getItem('user-token'),
         profile: JSON.parse(localStorage.getItem('user-profile')),
         events: [],
         showFormEventCreate: false,
         showFormAddPhoto: false,
+        errorEventForm: {
+          exist: false,
+          text: errorEmptyEventName
+        },
+        errorPhotoForm: {
+          exist: false,
+          text: errorEmptyPhoto
+        },
       }
     },
+
     created () {
+      window.addEventListener('beforeunload', this.removePhotoLocalStorage);
+
       this.initializeGallery();
     },
+
+    beforeDestroy() {
+      this.removePhotoLocalStorage();
+    },
+
     methods: {
+      removePhotoLocalStorage () {
+        let photoId = null;
+        this.eventId = '';
+
+        if (localStorage.getItem('photo-id') !== null){
+          photoId = localStorage.getItem('photo-id');
+          localStorage.removeItem('photo-id');
+        }
+
+        if(photoId !== null) {
+          axios({
+            url: 'https://parents-children.herokuapp.com/graphql',
+            headers: {
+              Authorization: `Bearer ${this.token}`
+            },
+            method: 'post',
+            data: {
+              query: `
+              mutation {
+                deletePhoto(input: {
+                  where: {
+                    id: "${photoId}"
+                  }
+                }) {
+                  photo {
+                    id
+                  }
+                }
+              }
+            `
+            }
+          }).then(result => {
+            console.log('Фото удалена из бд в связи с неиспользованием');
+          })
+            .catch(error => {
+              console.log(error);
+            })
+        }
+      },
+
+      clearEventErr() {
+        this.errorEventForm.exist = false;
+      },
+
+      clearPhotoErr() {
+        this.errorPhotoForm.exist = false;
+      },
 
       /**
        * Get Gallery for class with GraphQL query
@@ -72,7 +144,7 @@
 
       checkExistGallery() {
         axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
           },
@@ -102,7 +174,7 @@
 
       getEvents() {
         axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
           },
@@ -110,7 +182,7 @@
           data: {
             query: `
             {
-              events(sort: "created_at:asc", where: {
+              events(sort: "created_at:desc", where: {
                 gallery: "${this.galleryId}"
               }) {
                 id
@@ -137,7 +209,7 @@
 
       createGallery() {
         axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
           },
@@ -170,45 +242,53 @@
       },
 
       createEvent() {
-        axios({
-          url: 'http://localhost:1337/graphql',
-          headers: {
-            Authorization: `Bearer ${this.token}`
-          },
-          method: 'post',
-          data: {
-            query: `
-              mutation {
-                createEvent(input: {
-                  data: {
-                    gallery: ${this.galleryId}
-                    eventName: "${this.eventName}"
-                    timeStamp: "${this.formatDate(new Date())}"
-                  }
-                }){
-                  event {
-                    id
-                    timeStamp
-                    eventName
-                    gallery {
+        if (!this.eventName) {
+          this.errorEventForm.exist = true;
+        }
+        else {
+          this.errorEventForm.exist = false;
+
+          axios({
+            url: 'https://parents-children.herokuapp.com/graphql',
+            headers: {
+              Authorization: `Bearer ${this.token}`
+            },
+            method: 'post',
+            data: {
+              query: `
+                mutation {
+                  createEvent(input: {
+                    data: {
+                      gallery: ${this.galleryId}
+                      eventName: "${this.eventName}"
+                      timeStamp: "${this.formatDate(new Date())}"
+                    }
+                  }){
+                    event {
                       id
+                      timeStamp
+                      eventName
+                      gallery {
+                        id
+                      }
                     }
                   }
                 }
-              }
-            `
-          }
-        }).then(result => {
-          console.log("CreateEventSuccess!");
-          console.log(result);
-          this.showFormEventCreate = !this.showFormEventCreate;
-          this.eventName = '';
-        })
-        .catch(error => {
-          console.log("CreateEventError!");
-          console.log(error);
-          this.eventName = '';
-        });
+              `
+            }
+          }).then(result => {
+            console.log("CreateEventSuccess!");
+            console.log(result);
+            this.showFormEventCreate = !this.showFormEventCreate;
+            this.eventName = '';
+            this.getEvents();
+          })
+            .catch(error => {
+              console.log("CreateEventError!");
+              console.log(error);
+              this.eventName = '';
+            });
+        }
       },
 
       /**
@@ -231,61 +311,106 @@
         return day + ' ' + monthNames[monthIndex] + ' ' + hours+ ':' + minutes;
       },
 
+      scrollToAdditionPhoto() {
+        document.querySelector('.add-photo').scrollIntoView();
+      },
+
       createPhoto (eventId) {
-        axios({
-          url: 'http://localhost:1337/graphql',
-          headers: {
-            Authorization: `Bearer ${this.token}`
-          },
-          method: 'post',
-          data: {
-            query: `
-              mutation {
-                createPhoto(input: {
-                  data: {
-                    event: ${eventId}
-                  }
-                }){
-                  photo {
-                    id
+        if (this.eventId === '') {
+          this.eventId = eventId;
+        }
+
+        if (this.eventId !== eventId) {
+          this.removePhotoLocalStorage();
+        }
+
+        if (this.showFormEventCreate) {
+          this.showFormEventCreate = !this.showFormEventCreate
+        }
+
+        if (localStorage.getItem('photo-id') !== null) {
+          console.log("Get Photo from local storage!");
+          this.photoId = localStorage.getItem('photo-id');
+
+          if (!this.showFormAddPhoto) {
+            this.showFormAddPhoto = !this.showFormAddPhoto;
+          }
+          //scroll to form addition photo
+          setTimeout(this.scrollToAdditionPhoto, 200);
+        }
+        else {
+          axios({
+            url: 'https://parents-children.herokuapp.com/graphql',
+            headers: {
+              Authorization: `Bearer ${this.token}`
+            },
+            method: 'post',
+            data: {
+              query: `
+                mutation {
+                  createPhoto(input: {
+                    data: {
+                      event: ${eventId}
+                    }
+                  }){
+                    photo {
+                      id
+                    }
                   }
                 }
-              }
-            `
-          }
-        }).then(result => {
-          console.log("CreatePhotoSuccess!");
-          console.log(result);
-          this.photoId = result.data.data.createPhoto.photo.id;
-          this.showFormAddPhoto = !this.showFormAddPhoto;
+              `
+            }
+          }).then(result => {
+            console.log("CreatePhotoSuccess!");
+            console.log(result);
+            this.photoId = result.data.data.createPhoto.photo.id;
 
-          //scroll to form addition photo
-          document.querySelector('.add-photo').scrollIntoView();
-        })
-        .catch(error => {
-          console.log("CreatePhotoError!");
-          console.log(error);
-        });
+            if (!this.showFormAddPhoto) {
+              this.showFormAddPhoto = !this.showFormAddPhoto;
+            }
+
+            //Set localStorage for validation in the future
+            localStorage.setItem('photo-id', this.photoId);
+            //scroll to form addition photo
+            setTimeout(this.scrollToAdditionPhoto, 200);
+          })
+            .catch(error => {
+              console.log("CreatePhotoError!");
+              console.log(error);
+            });
+        }
       },
 
       addPhoto: async function () {
-        let formElement = document.querySelector('.form.add-photo');
-        let formData = new FormData(formElement);
+        if( document.getElementById("imageUploadFile").files.length === 0 ){
+          this.errorPhotoForm.exist = true;
+        }
+        else {
+          this.clearPhotoErr();
 
-        await axios.post('http://localhost:1337/upload', formData, {
-          headers: {
-            Authorization: `Bearer ${this.token}`
-          },
-        }).then((result) => {
-          console.log('uploadPhoto success');
-          console.log(result.data);
-          this.showFormAddPhoto = !this.showFormAddPhoto;
-          this.getEvents();
-        })
-        .catch(error => {
-          console.log('uploadPhoto');
-          console.log(error);
-        });
+          let formElement = document.querySelector('.form.add-photo');
+          let formData = new FormData(formElement);
+
+          await axios.post('https://parents-children.herokuapp.com/upload', formData, {
+            headers: {
+              Authorization: `Bearer ${this.token}`
+            },
+          }).then((result) => {
+            console.log('uploadPhoto success');
+            console.log(result.data);
+            this.showFormAddPhoto = !this.showFormAddPhoto;
+
+            // clear localStorage photo-id
+            localStorage.removeItem('photo-id');
+            this.photoId = null;
+
+            this.getEvents();
+          })
+            .catch(error => {
+              console.log('uploadPhoto');
+              console.log(error);
+            });
+        }
       },
 
       onSubmit () {
@@ -298,15 +423,35 @@
 <style scoped lang="stylus">
   .form
     font-family: 'Rubik', sans-serif
+    padding: 2rem
+    background: #e5e5e5
+    position: relative
+    &-close
+      width: 40px
+      height: 40px
+      position: absolute
+      top: 0;
+      right: 0;
+      background: url("../assets/image/close-svg.svg") no-repeat
+      background-size cover
+    .error
+      padding: .2rem
+      line-height: 140%
+      color: #f43737
+      text-align: center
     label
       font-size: 1.3rem
     .button.button-form
       line-height: 3rem
       font-size: 1rem
       align-self center
+    input
+      margin-top: 1rem
     input.input
+      margin-top 0
       &::placeholder
         font-family: 'Rubik', sans-serif
+
   .buttons
     margin-bottom: 2rem
   .year
@@ -334,6 +479,8 @@
         margin:0 2%
   .event
     padding: 0 0.7rem
+    &:not(:first-child)
+      margin-top: 2rem
   .gallery
     display: flex
     flex-direction: row
@@ -341,6 +488,17 @@
     justify-content: space-between
     align-items: center
     margin-top: 1.5rem
+    & > *
+      margin: 1rem 0;
+    &:after {
+      content: "";
+      flex: auto;
+    }
+    .add-image-wrap
+      width: 38%;
+      display: flex
+      align-items: center
+      justify-content: center
     &-add-image
       width: 5rem
       height: 5rem
@@ -355,11 +513,12 @@
       cursor: pointer
     &-image
       position: relative
-      width: 32%
+      width: 31%
       transition: all .8s
+      flex-basis: 31%
       &-picture
         width: 100%
-        height: auto
+        height: 170px
         z-index: 1
         transition: all .8s
       &-desc

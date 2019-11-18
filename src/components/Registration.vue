@@ -34,13 +34,13 @@
               v-model="school"
             )
               option(v-for="oneSchool in schools") {{oneSchool.name}}
-            label.input__label Выберите Школу
+            label.input__label Выберите Школу/сад
           .input(v-if="showClassSelect")
             select#class.input__text(
               v-model="selectClass"
             )
               option(v-for="oneClass in classes") {{oneClass.name}}
-            label.input__label Выберите Класс
+            label.input__label Выберите Класс/группу
           .input
             input#password.input__text(
               required,
@@ -108,6 +108,8 @@
         schools: [],
         school: {},
         classId: '',
+        schoolId: '',
+        cityId: '',
         classes: [],
         selectClass: '',
         onerr: false
@@ -119,29 +121,59 @@
     methods: {
       getClassId: async function() {
         await axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           method: 'post',
           data: {
             query: `
             {
-             classes(
+            cities(
               where: {
-              name: "${this.selectClass}"
+              id: "${this.cityId}"
              }) {
-              id
-              name
+              schools(
+                where: {
+                id: "${this.schoolId}"
+               }) {
+                 classes(
+                  where: {
+                  name: "${this.selectClass}"
+                 }) {
+                  id
+                  name
+                  }
+                }
               }
             }
             `
           }
         }).then((result) => {
-          this.classId = result.data.data.classes.shift().id;
+          let citiesClassesRes = result.data.data.cities;
+          try {
+            if (citiesClassesRes.length !== 0) {
+              let schools = citiesClassesRes[0].schools;
+              if (schools.length !== 0) {
+                let classes = schools[0].classes;
+                if (classes.length !== 0) {
+                  this.classId = classes[0].id;
+                }
+              }
+            }
+          }
+          catch (e) {
+            console.log(e);
+            this.classId = 'undefined class id'
+          }
+
+
           console.log(this.classId);
         })
+          .catch((error) => {
+            console.log(error);
+          });
       },
     register: async function () {
        await axios
-          .post('http://localhost:1337/auth/local/register', {
+          .post('https://parents-children.herokuapp.com/auth/local/register', {
             username: this.username,
             email: this.email,
             password: this.password,
@@ -182,7 +214,7 @@
       updateRegisteredUser: async function() {
         //update vote
         await axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           method: 'post',
           headers: {
             Authorization: `Bearer ${this.token}`
@@ -234,7 +266,7 @@
 
       getCities: function () {
         axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           method: 'post',
           data: {
             query: `
@@ -249,7 +281,10 @@
         }).then((result) => {
           // console.log(result.data.data);
           this.cities = result.data.data.cities;
-        });
+        })
+          .catch((error) => {
+            console.log(error);
+          });
       },
 
       selectedCity: function () {
@@ -259,7 +294,7 @@
         }
 
         axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           method: 'post',
           data: {
             query: `
@@ -279,8 +314,16 @@
           }
         }).then((result) => {
           console.log(result.data.data);
-          this.schools = result.data.data.cities.shift().schools;
-        });
+          let citiesRes = result.data.data.cities;
+          if (citiesRes.length !== 0) {
+            this.cityId = citiesRes[0].id;
+            this.schools = citiesRes[0].schools;
+          }
+
+        })
+          .catch((error) => {
+            console.log(error);
+          });
       },
 
       selectedSchool: function () {
@@ -290,7 +333,7 @@
         console.log(this.school);
 
         axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           method: 'post',
           data: {
             query: `
@@ -310,8 +353,16 @@
           }
         }).then((result) => {
           console.log(result.data.data);
-          this.classes = result.data.data.schools.shift().classes;
-        });
+          let schoolsRes = result.data.data.schools;
+          if (schoolsRes.length !== 0) {
+            this.schoolId = schoolsRes[0].id;
+            this.classes = schoolsRes[0].classes;
+          }
+
+        })
+          .catch((error) => {
+            console.log(error);
+          });
       },
 
 

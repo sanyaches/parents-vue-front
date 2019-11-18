@@ -82,7 +82,7 @@
         answer.count++;
 
         axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
           },
@@ -118,7 +118,7 @@
 
         // Add row to Userstovotes table with voted User and passed Vote
         axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
           },
@@ -186,7 +186,7 @@
 
       voteInit: function () {
         axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
           },

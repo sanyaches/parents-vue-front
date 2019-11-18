@@ -49,8 +49,8 @@
         button.cp__popup-submit(type=submit @submit.prevent="submittedCreateVote" @click="submitCreateVoteForm") Создать голосование
 
 
-    .cp__mw.mw
-      .cp-tabs
+    .cp__mw.mw(:class="cpGrid")
+      .cp-tabs(v-if="meRole == 2")
         .cp-tabs__tab(@click="activeTab = 1" :class="{'active-tab': activeTab === 1}")
           span.cp-tabs__tab-count +1
           span.cp-tabs__tab-name Счета
@@ -66,10 +66,13 @@
           span.cp-tabs__tab-name Галерея
       .cp__content
         .cp__content-balance(v-if="meRole == 2")
-          span.cp__content-balance__title Баланс класса
-          .cp__content-balance__count
+          //span.cp__content-balance__title Баланс класса/группы
+          //.cp__content-balance__count
             span.cp__content-balance__count 14000
             span.cp__content-balance__valute ₽
+          span.cp__content-balance__title Класс
+          .cp__content-balance__count
+            span.cp__content-balance__count {{ this.class.name }}
         .cp__content-wrap
           div(v-if="meRole == 2 && activeTab===1")
             .order-error(v-if="payError") Ошибка
@@ -84,7 +87,7 @@
               span.cp__hr-text Оплачено
             Order(v-for="order in ordersPaid", :title="order.tallage.title", :tallage_price="order.tallage.price", :price="order.price", :order_id="order.id", :description="order.tallage.description", :key="order.id", :paid="true")
             .cp__hr
-              span.cp__hr-text Информация об оплате по классу
+              span.cp__hr-text Информация об оплате по классу/группе
             ClassTable(ref="classTable")
           div(v-if="meRole == 2 && activeTab===2")
             Vote(v-for="vote in votes"
@@ -119,16 +122,16 @@
           .cp__f {{ profile.family }}
           .cp__io {{ profile.name }} {{ profile.patronymic }}
 
-          .cp__kurator
+          .cp__kurator(v-if="meRole == 2")
             span Ваш куратор:
             div {{kurator.family}} {{kurator.name}} {{kurator.patronymic}}
-          .cp__button(@click="showPopupKuratorLetter = !showPopupKuratorLetter") Написать куратору
+          .cp__button(@click="showPopupKuratorLetter = !showPopupKuratorLetter" v-if="meRole == 2") Написать куратору
 
           .cp__button(@click="showPopup = !showPopup") Оставить заявку
 
           div(v-if="meRole == 2")
             .cp__location
-              span.cp__location-school Школа: {{ this.school.name }}
+              span.cp__location-school Школа/сад: {{ this.school.name }}
               span.cp__location-city {{ this.school.city }}
             .cp__hr
               span.cp__hr-text Информация об оплате {{  }}
@@ -219,12 +222,14 @@ export default {
     this.getUserInfo(); // получаем информацию о пользователе
     this.getMeId();
     await this.getUserSchoolClassCity();
-    this.getVotes(); // получаем данные по всем голосованиям в классе
+    if (this.meRole == 2) {
+      this.getVotes(); // получаем данные по всем голосованиям в классе/группе
+    }
     this.getKurator();
   },
   computed: {
     userAvatarBackground: function () {
-      return 'background-image:url(http://localhost:1337' + this.photo + ')'
+      return 'background-image:url(https://parents-children.herokuapp.com' + this.photo + ')'
     },
     ordersPaid: function () {
       return this.orders.filter(function (order) {
@@ -239,6 +244,13 @@ export default {
     totalPriceFunc: function () {
       return this.ordersWait.reduce((s, i) => s = s + i.price, 0);
     },
+
+    cpGrid () {
+      return {
+        'cp-grid-kurator': this.meRole == 12,
+        'cp-grid-parent': this.meRole == 2,
+      }
+    }
   },
   methods: {
     sendLetterToKurator() {
@@ -259,7 +271,7 @@ export default {
 
     getKurator: function () {
       axios({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://parents-children.herokuapp.com/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -295,7 +307,7 @@ export default {
 
       e.preventDefault();
 
-      await axios.post('http://localhost:1337/upload', formData, {
+      await axios.post('https://parents-children.herokuapp.com/upload', formData, {
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -327,7 +339,7 @@ export default {
       let userVotesPassed = [];
 
       await axios({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://parents-children.herokuapp.com/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -360,7 +372,7 @@ export default {
       });
 
       await axios({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://parents-children.herokuapp.com/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -419,7 +431,7 @@ export default {
       if (1 === 2) {
         this.payId = orderId;
         axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
           },
@@ -464,7 +476,7 @@ export default {
 
     orderFinallyPay () {
       axios({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://parents-children.herokuapp.com/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -505,7 +517,7 @@ export default {
 
     async getUserInfo () {
       await axios({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://parents-children.herokuapp.com/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -551,7 +563,7 @@ export default {
     },
 
     getMeId () {
-      axios.get('http://localhost:1337/users/me' ,{
+      axios.get('https://parents-children.herokuapp.com/users/me' ,{
         headers: {
           Authorization: `Bearer ${this.token}`
         }
@@ -569,7 +581,7 @@ export default {
      */
     getUserSchoolClassCity: async function () {
      await axios({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://parents-children.herokuapp.com/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -673,7 +685,7 @@ export default {
 
       //create new vote
       await axios ({
-        url: 'http://localhost:1337/graphql',
+        url: 'https://parents-children.herokuapp.com/graphql',
         headers: {
           Authorization: `Bearer ${this.token}`
         },
@@ -715,7 +727,7 @@ export default {
 
       this.answers.forEach((answer, index) => {
         axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
           },
@@ -779,6 +791,13 @@ export default {
 <style lang="stylus">
 @import url('https://fonts.googleapis.com/css?family=Rubik&display=swap')
 @import url('https://fonts.googleapis.com/css?family=Roboto&display=swap')
+
+.cp__mw.cp-grid-kurator
+  grid-template-columns: 5fr 3fr;
+
+.cp__mw.cp-grid-parent
+  grid-template-columns: 1.5fr 5fr 3fr;
+
 .cp__popup-form.popup-create-vote
   height: auto;
   padding: 1rem 0;

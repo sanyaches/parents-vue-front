@@ -6,7 +6,7 @@
       .chat-header__people {{count}} {{peopleString}}
   .chat-messages
     .message(v-for="msg in messages" :class="{'my-message': msg.userId === ''+profile.id}")
-      img.message-avatar(:src="`http://localhost:1337${msg.urlAvatar}`")
+      img.message-avatar(:src="`https://parents-children.herokuapp.com${msg.urlAvatar}`")
       .message-message
         .message-content
           .message-message__name {{ msg.fullName }} ({{msg.childName}})
@@ -26,6 +26,7 @@
     name: "ClassChat",
     data () {
       return {
+        countMessages: 0,
         chat: {},
         timerIdInterval: '',
         count: 0,
@@ -86,7 +87,7 @@
         this.mySelf.userId = ''+this.profile.id;
 
         axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
           },
@@ -118,7 +119,7 @@
 
       computeCountUsers: async function() {
         await axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
           },
@@ -152,8 +153,12 @@
         await this.queryChat();
         this.queryMessages();
 
-        //After get chat scroll to his bottom
-        this.scrollChatBottom();
+        if (this.countMessages !== this.messages.length) {
+          this.countMessages = this.messages.length;
+          //After get chat scroll to his bottom
+          this.scrollChatBottom();
+        }
+
       },
 
       /**
@@ -166,7 +171,7 @@
 
       async queryChat() {
        await axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
           },
@@ -196,7 +201,7 @@
 
       queryMessages() {
         axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
           },
@@ -256,7 +261,7 @@
       sendPersonMessage: async function () {
 
         await axios({
-          url: 'http://localhost:1337/graphql',
+          url: 'https://parents-children.herokuapp.com/graphql',
           headers: {
             Authorization: `Bearer ${this.token}`
           },
